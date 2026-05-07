@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EF Ambassador Program - ROI Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #F8F9FA;
+            color: #1B3A5C;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: #FFFFFF;
+            padding: 20px 40px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .header svg {
+            width: 60px;
+            height: 60px;
+        }
+
+        .header-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1B3A5C;
+        }
+
+        .header-subtitle {
+            font-size: 14px;
+            color: #6B7C8F;
+            margin-top: 2px;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 24px;
+        }
+
+        .page-title {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .page-title h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1B3A5C;
+            margin-bottom: 8px;
+        }
+
+        .page-title p {
+            font-size: 16px;
+            color: #6B7C8F;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #D50072;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        /* Calculator Layout */
+        .calculator-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+            align-items: start;
+        }
+
+        @media (max-width: 768px) {
+            .calculator-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Cards */
+        .card {
+            background: #FFFFFF;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            border: 1px solid #E8ECF0;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1B3A5C;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title .icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .icon-input {
+            background: #D4EDFC;
+            color: #5AABEE;
+        }
+
+        .icon-output {
+            background: #FADCE8;
+            color: #D50072;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #4A5D6F;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .form-group .helper {
+            font-size: 12px;
+            color: #8A9BAD;
+            margin-top: 4px;
+            font-weight: 400;
+            text-transform: none;
+            letter-spacing: 0;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #E8ECF0;
+            border-radius: 10px;
+            font-size: 16px;
+            color: #1B3A5C;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background: #FAFBFC;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #D50072;
+            box-shadow: 0 0 0 3px rgba(213, 0, 114, 0.1);
+            background: #FFFFFF;
+        }
+
+        .form-group input::placeholder {
+            color: #B8C4D0;
+        }
+
+        .input-prefix {
+            position: relative;
+        }
+
+        .input-prefix span {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8A9BAD;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .input-prefix input {
+            padding-left: 32px;
+        }
+
+        .input-suffix {
+            position: relative;
+        }
+
+        .input-suffix span {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8A9BAD;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .input-suffix input {
+            padding-right: 36px;
+        }
+
+        /* ROI Selector */
+        .roi-selector {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .roi-option {
+            padding: 10px 8px;
+            border: 2px solid #E8ECF0;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            font-weight: 600;
+            color: #4A5D6F;
+            background: #FAFBFC;
+        }
+
+        .roi-option:hover {
+            border-color: #D50072;
+            background: #FFF5F9;
+        }
+
+        .roi-option.active {
+            border-color: #D50072;
+            background: #D50072;
+            color: white;
+        }
+
+        /* Slider */
+        .slider-container {
+            margin-top: 8px;
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .slider-labels span {
+            font-size: 13px;
+            font-weight: 600;
+            color: #4A5D6F;
+        }
+
+        .slider-labels .value {
+            color: #D50072;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #E8ECF0;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #D50072;
+            cursor: pointer;
+            border: 3px solid white;
+            box-shadow: 0 2px 6px rgba(213, 0, 114, 0.3);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #D50072;
+            cursor: pointer;
+            border: 3px solid white;
+            box-shadow: 0 2px 6px rgba(213, 0, 114, 0.3);
+        }
+
+        /* Results */
+        .results-card {
+            border: 2px solid #D50072;
+            background: linear-gradient(135deg, #FFFFFF 0%, #FFF8FB 100%);
+        }
+
+        .result-item {
+            padding: 16px 0;
+            border-bottom: 1px solid #F0E4EA;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .result-item:first-child {
+            padding-top: 0;
+        }
+
+        .result-label {
+            font-size: 13px;
+            color: #6B7C8F;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            font-weight: 600;
+        }
+
+        .result-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1B3A5C;
+        }
+
+        .result-value.highlight {
+            color: #D50072;
+        }
+
+        .result-value .unit {
+            font-size: 16px;
+            font-weight: 500;
+            color: #6B7C8F;
+            margin-left: 4px;
+        }
+
+        .result-breakdown {
+            font-size: 12px;
+            color: #8A9BAD;
+            margin-top: 4px;
+        }
+
+        /* Divider */
+        .results-divider {
+            height: 2px;
+            background: linear-gradient(90deg, #D50072, #5AABEE);
+            border-radius: 1px;
+            margin: 8px 0;
+        }
+
+        /* Formula Section */
+        .formula-section {
+            margin-top: 40px;
+        }
+
+        .formula-card {
+            background: #1B3A5C;
+            color: white;
+            border-radius: 16px;
+            padding: 32px;
+        }
+
+        .formula-card h3 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            color: #5AABEE;
+        }
+
+        .formula-card code {
+            display: block;
+            background: rgba(255,255,255,0.08);
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 13px;
+            color: #E0F0FF;
+            border-left: 3px solid #D50072;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 40px 24px;
+            color: #8A9BAD;
+            font-size: 13px;
+        }
+
+        .footer a {
+            color: #D50072;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <div class="header">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="50" r="48" fill="none" stroke="#1B3A5C" stroke-width="3"/>
+            <text x="50" y="62" text-anchor="middle" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="#1B3A5C">EF</text>
+        </svg>
+        <div class="header-text">
+            <div class="header-title">Ambassador Program</div>
+            <div class="header-subtitle">Rewards ROI Calculator</div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="page-title">
+            <span class="badge">FREE WEEKS</span>
+            <h1>Reward ROI Calculator</h1>
+            <p>Calculate the BKNs and Points needed to achieve your target ROI for Free Week rewards.</p>
+        </div>
+
+        <div class="calculator-grid">
+            <!-- Input Card -->
+            <div class="card">
+                <div class="card-title">
+                    <div class="icon icon-input">📊</div>
+                    Input Parameters
+                </div>
+
+                <div class="form-group">
+                    <label>Cost of Free Week(s)</label>
+                    <div class="input-prefix">
+                        <span>$</span>
+                        <input type="number" id="weekCost" placeholder="800" value="800" min="0" step="50">
+                    </div>
+                    <p class="helper">Dollar value of the weeks being given as reward</p>
+                </div>
+
+                <div class="form-group">
+                    <label>Average BKN Value</label>
+                    <div class="input-prefix">
+                        <span>$</span>
+                        <input type="number" id="bknValue" placeholder="600" value="600" min="0" step="50">
+                    </div>
+                    <p class="helper">Value of 1 referred booking if it had been paid</p>
+                </div>
+
+                <div class="form-group">
+                    <label>Target ROI</label>
+                    <div class="roi-selector">
+                        <div class="roi-option" data-roi="100" onclick="selectROI(this)">100%</div>
+                        <div class="roi-option active" data-roi="200" onclick="selectROI(this)">200%</div>
+                        <div class="roi-option" data-roi="300" onclick="selectROI(this)">300%</div>
+                        <div class="roi-option" data-roi="400" onclick="selectROI(this)">400%</div>
+                    </div>
+                    <div style="margin-top: 12px;">
+                        <div class="input-suffix">
+                            <span>%</span>
+                            <input type="number" id="customROI" placeholder="Custom ROI" value="200" min="0" step="50">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Payment Split</label>
+                    <div class="slider-container">
+                        <div class="slider-labels">
+                            <span>Points: <span class="value" id="pointsPercentLabel">25%</span></span>
+                            <span>BKNs: <span class="value" id="bknsPercentLabel">75%</span></span>
+                        </div>
+                        <input type="range" id="paymentSlider" min="0" max="100" value="25" oninput="updateSlider()">
+                    </div>
+                    <p class="helper">Drag to adjust how ambassadors pay for the reward</p>
+                </div>
+            </div>
+
+            <!-- Results Card -->
+            <div class="card results-card">
+                <div class="card-title">
+                    <div class="icon icon-output">🎯</div>
+                    Results
+                </div>
+
+                <div class="result-item">
+                    <div class="result-label">Required Revenue</div>
+                    <div class="result-value" id="requiredRevenue">$2,400</div>
+                    <div class="result-breakdown" id="revenueBreakdown">Cost × (1 + ROI%) = $800 × 3</div>
+                </div>
+
+                <div class="results-divider"></div>
+
+                <div class="result-item">
+                    <div class="result-label">BKNs Needed</div>
+                    <div class="result-value highlight" id="bknsNeeded">3<span class="unit">BKNs</span></div>
+                    <div class="result-breakdown" id="bknsBreakdown">75% of revenue ÷ BKN value</div>
+                </div>
+
+                <div class="result-item">
+                    <div class="result-label">Points Needed (before bonus)</div>
+                    <div class="result-value" id="pointsNeeded">12,000<span class="unit">pts</span></div>
+                    <div class="result-breakdown" id="pointsBreakdown">25% of revenue ÷ $0.05 per point</div>
+                </div>
+
+                <div class="results-divider"></div>
+
+                <div class="result-item">
+                    <div class="result-label">Total Points Required (with BKN bonus)</div>
+                    <div class="result-value highlight" id="totalPoints">15,000<span class="unit">pts</span></div>
+                    <div class="result-breakdown" id="totalPointsBreakdown">12,000 + (3 BKNs × 1,000 bonus pts)</div>
+                </div>
+
+                <div class="result-item" style="background: #F8F0F5; border-radius: 10px; padding: 16px; margin-top: 8px;">
+                    <div class="result-label">💡 Summary</div>
+                    <div id="summary" style="font-size: 14px; color: #1B3A5C; line-height: 1.6; margin-top: 8px;">
+                        Ask ambassadors for <strong>3 BKNs</strong> and <strong>15,000 points</strong> to achieve a <strong>200% ROI</strong> on the Free Week reward.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formula Reference -->
+        <div class="formula-section">
+            <div class="formula-card">
+                <h3>📐 Formula Reference</h3>
+                <code>Required Revenue = Cost × (1 + ROI%)</code>
+                <code>BKNs Needed = (Revenue × % BKNs) ÷ BKN Value</code>
+                <code>Points Needed = (Revenue × % Points) ÷ $0.05</code>
+                <code>Total Points = Points Needed + (BKNs Needed × 1,000)</code>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>EF Ambassador Program — ROI Calculator | 1 Point = $0.05 USD | 1,000 bonus pts per BKN</p>
+    </div>
+
+    <script>
+        // Constants
+        const POINT_VALUE = 0.05; // $0.05 per point
+        const BONUS_POINTS_PER_BKN = 1000;
+
+        // Elements
+        const weekCostInput = document.getElementById('weekCost');
+        const bknValueInput = document.getElementById('bknValue');
+        const customROIInput = document.getElementById('customROI');
+        const paymentSlider = document.getElementById('paymentSlider');
+
+        // Results elements
+        const requiredRevenueEl = document.getElementById('requiredRevenue');
+        const revenueBreakdownEl = document.getElementById('revenueBreakdown');
+        const bknsNeededEl = document.getElementById('bknsNeeded');
+        const bknsBreakdownEl = document.getElementById('bknsBreakdown');
+        const pointsNeededEl = document.getElementById('pointsNeeded');
+        const pointsBreakdownEl = document.getElementById('pointsBreakdown');
+        const totalPointsEl = document.getElementById('totalPoints');
+        const totalPointsBreakdownEl = document.getElementById('totalPointsBreakdown');
+        const summaryEl = document.getElementById('summary');
+
+        // ROI Selection
+        function selectROI(el) {
+            document.querySelectorAll('.roi-option').forEach(opt => opt.classList.remove('active'));
+            el.classList.add('active');
+            customROIInput.value = el.dataset.roi;
+            calculate();
+        }
+
+        // Slider Update
+        function updateSlider() {
+            const pointsPercent = parseInt(paymentSlider.value);
+            const bknsPercent = 100 - pointsPercent;
+            document.getElementById('pointsPercentLabel').textContent = pointsPercent + '%';
+            document.getElementById('bknsPercentLabel').textContent = bknsPercent + '%';
+            calculate();
+        }
+
+        // Format number with commas
+        function formatNumber(num) {
+            return num.toLocaleString('en-US');
+        }
+
+        // Main Calculation
+        function calculate() {
+            const cost = parseFloat(weekCostInput.value) || 0;
+            const bknValue = parseFloat(bknValueInput.value) || 0;
+            const roiPercent = parseFloat(customROIInput.value) || 0;
+            const pointsPercent = parseInt(paymentSlider.value) / 100;
+            const bknsPercent = 1 - pointsPercent;
+
+            // Step 1: Required Revenue
+            const roiMultiplier = 1 + (roiPercent / 100);
+            const requiredRevenue = cost * roiMultiplier;
+
+            // Step 2: Split
+            const revenueFromBKNs = requiredRevenue * bknsPercent;
+            const revenueFromPoints = requiredRevenue * pointsPercent;
+
+            // Step 3: BKNs Needed
+            const bknsNeeded = bknValue > 0 ? revenueFromBKNs / bknValue : 0;
+
+            // Step 4: Points Needed (before bonus)
+            const pointsNeeded = revenueFromPoints / POINT_VALUE;
+
+            // Step 5: Total Points (with bonus)
+            const bonusPoints = Math.ceil(bknsNeeded) * BONUS_POINTS_PER_BKN;
+            const totalPoints = pointsNeeded + bonusPoints;
+
+            // Update UI
+            requiredRevenueEl.textContent = '$' + formatNumber(Math.round(requiredRevenue));
+            revenueBreakdownEl.textContent = `Cost × (1 + ${roiPercent}%) = $${formatNumber(cost)} × ${roiMultiplier}`;
+
+            bknsNeededEl.innerHTML = `${bknsNeeded % 1 === 0 ? bknsNeeded : bknsNeeded.toFixed(2)}<span class="unit">BKNs</span>`;
+            bknsBreakdownEl.textContent = `${Math.round(bknsPercent * 100)}% of $${formatNumber(Math.round(requiredRevenue))} ÷ $${formatNumber(bknValue)} per BKN`;
+
+            pointsNeededEl.innerHTML = `${formatNumber(Math.round(pointsNeeded))}<span class="unit">pts</span>`;
+            pointsBreakdownEl.textContent = `${Math.round(pointsPercent * 100)}% of $${formatNumber(Math.round(requiredRevenue))} ÷ $${POINT_VALUE} per point`;
+
+            totalPointsEl.innerHTML = `${formatNumber(Math.round(totalPoints))}<span class="unit">pts</span>`;
+            totalPointsBreakdownEl.textContent = `${formatNumber(Math.round(pointsNeeded))} + (${Math.ceil(bknsNeeded)} BKNs × ${formatNumber(BONUS_POINTS_PER_BKN)} bonus pts)`;
+
+            // Summary
+            const bknsDisplay = bknsNeeded % 1 === 0 ? bknsNeeded : bknsNeeded.toFixed(2);
+            summaryEl.innerHTML = `Ask ambassadors for <strong>${bknsDisplay} BKNs</strong> and <strong>${formatNumber(Math.round(totalPoints))} points</strong> to achieve a <strong>${roiPercent}% ROI</strong> on the Free Week reward.`;
+
+            // Update ROI buttons active state
+            const roiOptions = document.querySelectorAll('.roi-option');
+            roiOptions.forEach(opt => {
+                opt.classList.toggle('active', parseInt(opt.dataset.roi) === roiPercent);
+            });
+        }
+
+        // Event Listeners
+        weekCostInput.addEventListener('input', calculate);
+        bknValueInput.addEventListener('input', calculate);
+        customROIInput.addEventListener('input', function() {
+            document.querySelectorAll('.roi-option').forEach(opt => opt.classList.remove('active'));
+            const matchingOption = document.querySelector(`.roi-option[data-roi="${this.value}"]`);
+            if (matchingOption) matchingOption.classList.add('active');
+            calculate();
+        });
+
+        // Initial calculation
+        calculate();
+    </script>
+
+</body>
+</html>
