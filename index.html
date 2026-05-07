@@ -254,57 +254,30 @@
             color: white;
         }
 
-        /* Slider */
-        .slider-container {
+        /* Fixed Split Info */
+        .split-info {
+            display: flex;
+            gap: 12px;
             margin-top: 8px;
         }
 
-        .slider-labels {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-        }
-
-        .slider-labels span {
+        .split-badge {
+            flex: 1;
+            padding: 10px 12px;
+            border-radius: 10px;
+            text-align: center;
             font-size: 13px;
             font-weight: 600;
-            color: #4A5D6F;
         }
 
-        .slider-labels .value {
+        .split-badge.points {
+            background: #F0E6FF;
+            color: #7B2D8B;
+        }
+
+        .split-badge.bkns {
+            background: #FADCE8;
             color: #D50072;
-        }
-
-        input[type="range"] {
-            width: 100%;
-            height: 6px;
-            border-radius: 3px;
-            background: #E8ECF0;
-            outline: none;
-            -webkit-appearance: none;
-            appearance: none;
-        }
-
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            background: #D50072;
-            cursor: pointer;
-            border: 3px solid white;
-            box-shadow: 0 2px 6px rgba(213, 0, 114, 0.3);
-        }
-
-        input[type="range"]::-moz-range-thumb {
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            background: #D50072;
-            cursor: pointer;
-            border: 3px solid white;
-            box-shadow: 0 2px 6px rgba(213, 0, 114, 0.3);
         }
 
         /* Results */
@@ -476,15 +449,12 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Payment Split</label>
-                    <div class="slider-container">
-                        <div class="slider-labels">
-                            <span>Points: <span class="value" id="pointsPercentLabel">25%</span></span>
-                            <span>BKNs: <span class="value" id="bknsPercentLabel">75%</span></span>
-                        </div>
-                        <input type="range" id="paymentSlider" min="0" max="100" value="25" oninput="updateSlider()">
+                    <label>Payment Split (Fixed)</label>
+                    <div class="split-info">
+                        <div class="split-badge points">25% Points</div>
+                        <div class="split-badge bkns">75% BKNs</div>
                     </div>
-                    <p class="helper">Drag to adjust how ambassadors pay for the reward</p>
+                    <p class="helper">Fixed payment structure for Free Week rewards</p>
                 </div>
             </div>
 
@@ -537,8 +507,8 @@
             <div class="formula-card">
                 <h3>📐 Formula Reference</h3>
                 <code>Required Revenue = Cost × (1 + ROI%)</code>
-                <code>BKNs Needed = (Revenue × % BKNs) ÷ BKN Value</code>
-                <code>Points Needed = (Revenue × % Points) ÷ $0.05</code>
+                <code>BKNs Needed = (Revenue × 75%) ÷ BKN Value</code>
+                <code>Points Needed = (Revenue × 25%) ÷ $0.05</code>
                 <code>Total Points = Points Needed + (BKNs Needed × 1,000)</code>
             </div>
         </div>
@@ -553,12 +523,13 @@
         // Constants
         const POINT_VALUE = 0.05; // $0.05 per point
         const BONUS_POINTS_PER_BKN = 1000;
+        const POINTS_PERCENT = 0.25; // Fixed 25%
+        const BKNS_PERCENT = 0.75; // Fixed 75%
 
         // Elements
         const weekCostInput = document.getElementById('weekCost');
         const bknValueInput = document.getElementById('bknValue');
         const customROIInput = document.getElementById('customROI');
-        const paymentSlider = document.getElementById('paymentSlider');
 
         // Results elements
         const requiredRevenueEl = document.getElementById('requiredRevenue');
@@ -579,15 +550,6 @@
             calculate();
         }
 
-        // Slider Update
-        function updateSlider() {
-            const pointsPercent = parseInt(paymentSlider.value);
-            const bknsPercent = 100 - pointsPercent;
-            document.getElementById('pointsPercentLabel').textContent = pointsPercent + '%';
-            document.getElementById('bknsPercentLabel').textContent = bknsPercent + '%';
-            calculate();
-        }
-
         // Format number with commas
         function formatNumber(num) {
             return num.toLocaleString('en-US');
@@ -598,16 +560,14 @@
             const cost = parseFloat(weekCostInput.value) || 0;
             const bknValue = parseFloat(bknValueInput.value) || 0;
             const roiPercent = parseFloat(customROIInput.value) || 0;
-            const pointsPercent = parseInt(paymentSlider.value) / 100;
-            const bknsPercent = 1 - pointsPercent;
 
             // Step 1: Required Revenue
             const roiMultiplier = 1 + (roiPercent / 100);
             const requiredRevenue = cost * roiMultiplier;
 
-            // Step 2: Split
-            const revenueFromBKNs = requiredRevenue * bknsPercent;
-            const revenueFromPoints = requiredRevenue * pointsPercent;
+            // Step 2: Split (Fixed 75% BKNs / 25% Points)
+            const revenueFromBKNs = requiredRevenue * BKNS_PERCENT;
+            const revenueFromPoints = requiredRevenue * POINTS_PERCENT;
 
             // Step 3: BKNs Needed
             const bknsNeeded = bknValue > 0 ? revenueFromBKNs / bknValue : 0;
@@ -624,10 +584,10 @@
             revenueBreakdownEl.textContent = `Cost × (1 + ${roiPercent}%) = $${formatNumber(cost)} × ${roiMultiplier}`;
 
             bknsNeededEl.innerHTML = `${bknsNeeded % 1 === 0 ? bknsNeeded : bknsNeeded.toFixed(2)}<span class="unit">BKNs</span>`;
-            bknsBreakdownEl.textContent = `${Math.round(bknsPercent * 100)}% of $${formatNumber(Math.round(requiredRevenue))} ÷ $${formatNumber(bknValue)} per BKN`;
+            bknsBreakdownEl.textContent = `75% of $${formatNumber(Math.round(requiredRevenue))} ÷ $${formatNumber(bknValue)} per BKN`;
 
             pointsNeededEl.innerHTML = `${formatNumber(Math.round(pointsNeeded))}<span class="unit">pts</span>`;
-            pointsBreakdownEl.textContent = `${Math.round(pointsPercent * 100)}% of $${formatNumber(Math.round(requiredRevenue))} ÷ $${POINT_VALUE} per point`;
+            pointsBreakdownEl.textContent = `25% of $${formatNumber(Math.round(requiredRevenue))} ÷ $${POINT_VALUE} per point`;
 
             totalPointsEl.innerHTML = `${formatNumber(Math.round(totalPoints))}<span class="unit">pts</span>`;
             totalPointsBreakdownEl.textContent = `${formatNumber(Math.round(pointsNeeded))} + (${Math.ceil(bknsNeeded)} BKNs × ${formatNumber(BONUS_POINTS_PER_BKN)} bonus pts)`;
