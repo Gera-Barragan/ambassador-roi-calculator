@@ -109,6 +109,7 @@
                         <label>Average BKN Value</label>
                         <div class="input-prefix"><span>$</span><input type="number" id="bknValue" placeholder="600" value="600" min="0" step="50"></div>
                         <p class="helper">Value of 1 referred booking if it had been paid</p>
+                        <p class="helper" style="margin-top: 8px; font-style: italic;">The cost is calculated by making the average cost per opp per booking from all paid channels</p>
                     </div>
                     <div class="form-group">
                         <label>Target ROI</label>
@@ -137,7 +138,7 @@
                     <div class="result-item" style="background: #F8F0F5; border-radius: 10px; padding: 16px; margin-top: 8px;"><div class="result-label">&#128161; Summary</div><div id="fw_summary" style="font-size: 14px; color: #1B3A5C; line-height: 1.6; margin-top: 8px;"></div></div>
                 </div>
             </div>
-            <div class="formula-section"><div class="formula-card"><h3>&#128208; Formula Reference</h3><code>Required Revenue = Cost x (1 + ROI%)</code><code>BKNs Needed = (Revenue x 75%) / BKN Value</code><code>Points Needed = (Revenue x 25%) / $0.05</code><code>Total Points = Points Needed + (BKNs Needed x 1,000)</code></div></div>
+            <div class="formula-section"><div class="formula-card"><h3>&#128208; Formula Reference</h3><code>Required Revenue = Cost x (1 + ROI%)</code><code>BKNs Needed = (Revenue x 75%) / BKN Value</code><code>Points Needed = (Revenue x 25%) / $0.055</code><code>Total Points = Points Needed + (BKNs Needed x 1,000)</code></div></div>
         </div>
 
         <!-- CHALLENGES TAB -->
@@ -198,6 +199,7 @@
 
         var hourlyCategories = ['Sales Support', 'Events & Fairs', 'School & Uni connections'];
         var POINT_VALUE = 0.05;
+        var FW_POINT_VALUE = 0.055;
         var BONUS_POINTS_PER_BKN = 1000;
         var POINTS_PERCENT = 0.25;
         var BKNS_PERCENT = 0.75;
@@ -230,7 +232,7 @@
             var revenueFromBKNs = requiredRevenue * BKNS_PERCENT;
             var revenueFromPoints = requiredRevenue * POINTS_PERCENT;
             var bknsNeeded = bknValue > 0 ? revenueFromBKNs / bknValue : 0;
-            var pointsNeeded = revenueFromPoints / POINT_VALUE;
+            var pointsNeeded = revenueFromPoints / FW_POINT_VALUE;
             var bonusPoints = Math.ceil(bknsNeeded) * BONUS_POINTS_PER_BKN;
             var totalPoints = pointsNeeded + bonusPoints;
             document.getElementById('fw_revenue').textContent = '$' + formatNumber(Math.round(requiredRevenue));
@@ -239,7 +241,7 @@
             document.getElementById('fw_bkns').innerHTML = bknsDisplay + '<span class="unit">BKNs</span>';
             document.getElementById('fw_bknsBreakdown').textContent = '75% of $' + formatNumber(Math.round(requiredRevenue)) + ' / $' + formatNumber(bknValue) + ' per BKN';
             document.getElementById('fw_points').innerHTML = formatNumber(Math.round(pointsNeeded)) + '<span class="unit">pts</span>';
-            document.getElementById('fw_pointsBreakdown').textContent = '25% of $' + formatNumber(Math.round(requiredRevenue)) + ' / $' + POINT_VALUE + ' per point';
+            document.getElementById('fw_pointsBreakdown').textContent = '25% of $' + formatNumber(Math.round(requiredRevenue)) + ' / $' + FW_POINT_VALUE + ' per point';
             document.getElementById('fw_totalPoints').innerHTML = formatNumber(Math.round(totalPoints)) + '<span class="unit">pts</span>';
             document.getElementById('fw_totalBreakdown').textContent = formatNumber(Math.round(pointsNeeded)) + ' + (' + Math.ceil(bknsNeeded) + ' BKNs x ' + formatNumber(BONUS_POINTS_PER_BKN) + ' bonus pts)';
             document.getElementById('fw_summary').innerHTML = 'Ask ambassadors for <strong>' + bknsDisplay + ' BKNs</strong> and <strong>' + formatNumber(Math.round(totalPoints)) + ' points</strong> to achieve a <strong>' + roiPercent + '% ROI</strong> on the Free Week reward.';
