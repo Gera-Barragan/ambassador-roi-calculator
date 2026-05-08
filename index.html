@@ -92,6 +92,7 @@
         <div class="tab-nav">
             <div class="tab-btn active" onclick="switchTab('freeweeks')">&#127873; Free Weeks</div>
             <div class="tab-btn" onclick="switchTab('challenges')">&#127942; Challenges</div>
+            <div class="tab-btn" onclick="switchTab('rewards')">&#127941; Rewards</div>
         </div>
 
         <!-- FREE WEEKS TAB -->
@@ -192,6 +193,67 @@
         </div>
     </div>
 
+
+        <!-- REWARDS TAB -->
+        <div class="tab-content" id="tab-rewards">
+            <div style="text-align:center; margin-bottom: 24px;"><span class="badge">REWARDS</span></div>
+            <div class="calculator-grid">
+                <div class="card">
+                    <div class="card-title"><div class="icon icon-input">&#128202;</div> Input Parameters</div>
+                    <div class="form-group">
+                        <label>Reward Type</label>
+                        <select id="rw_type" onchange="calculateRewards()">
+                            <option value="">-- Select Reward Type --</option>
+                            <option value="Gift Cards">Gift Cards</option>
+                            <option value="Free Credit Activities">Free Credit Activities</option>
+                            <option value="Great Experiences">Great Experiences</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Gifts">Gifts</option>
+                            <option value="Technology">Technology</option>
+                            <option value="Charity">Charity</option>
+                            <option value="Merch">Merch</option>
+                            <option value="Events">Events</option>
+                        </select>
+                        <p class="helper">Select the type of reward being offered</p>
+                    </div>
+                    <div class="form-group">
+                        <label>Reward Value</label>
+                        <div class="input-prefix"><span>$</span><input type="number" id="rw_value" placeholder="100" value="100" min="0" step="10" oninput="calculateRewards()"></div>
+                        <p class="helper">Dollar value of the reward being given</p>
+                        <p class="helper" style="margin-top: 8px; font-style: italic;" id="rw_ruleNote">Rewards under 00: paid in Points only. 00+: 75% BKNs / 25% Points</p>
+                    </div>
+                    <div class="form-group" id="rw_bknGroup" style="display:none;">
+                        <label>Average BKN Value</label>
+                        <div class="input-prefix"><span>$</span><input type="number" id="rw_bknValue" placeholder="600" value="600" min="0" step="50" oninput="calculateRewards()"></div>
+                        <p class="helper">Value of 1 referred booking (only needed for rewards 00+)</p>
+                    </div>
+                    <div class="form-group">
+                        <label>Target ROI</label>
+                        <div class="roi-selector">
+                            <div class="roi-option active" data-roi="100" data-tab="rw" onclick="selectROI(this,'rw')">100%</div>
+                            <div class="roi-option" data-roi="200" data-tab="rw" onclick="selectROI(this,'rw')">200%</div>
+                            <div class="roi-option" data-roi="300" data-tab="rw" onclick="selectROI(this,'rw')">300%</div>
+                            <div class="roi-option" data-roi="400" data-tab="rw" onclick="selectROI(this,'rw')">400%</div>
+                        </div>
+                        <div style="margin-top: 12px;"><div class="input-suffix"><span>%</span><input type="number" id="customROI_rw" placeholder="Custom" value="100" min="0" step="50"></div></div>
+                    </div>
+                </div>
+                <div class="card results-card">
+                    <div class="card-title"><div class="icon icon-output">&#127919;</div> Results</div>
+                    <div class="result-item"><div class="result-label">Required Revenue</div><div class="result-value" id="rw_revenue">00</div><div class="result-breakdown" id="rw_revenueBreakdown">Cost x (1 + ROI%)</div></div>
+                    <div class="results-divider"></div>
+                    <div class="result-item" id="rw_bknsResult" style="display:none;"><div class="result-label">BKNs Needed</div><div class="result-value highlight" id="rw_bkns">0<span class="unit">BKNs</span></div><div class="result-breakdown" id="rw_bknsBreakdown"></div></div>
+                    <div class="result-item"><div class="result-label">Points Needed (before bonus)</div><div class="result-value" id="rw_points">0<span class="unit">pts</span></div><div class="result-breakdown" id="rw_pointsBreakdown"></div></div>
+                    <div class="result-item" id="rw_totalResult" style="display:none;"><div class="result-label">Total Points Required (with BKN bonus)</div><div class="result-value highlight" id="rw_totalPoints">0<span class="unit">pts</span></div><div class="result-breakdown" id="rw_totalBreakdown"></div></div>
+                    <div class="results-divider"></div>
+                    <div class="result-item" style="background: #F8F0F5; border-radius: 10px; padding: 16px; margin-top: 8px;"><div class="result-label">&#128161; Summary</div><div id="rw_summary" style="font-size: 14px; color: #1B3A5C; line-height: 1.6; margin-top: 8px;">Select a reward type and value to see results.</div></div>
+                </div>
+            </div>
+            <div class="formula-section"><div class="formula-card"><h3>&#128208; Formula Reference</h3><code>Required Revenue = Reward Value x (1 + ROI%)</code><code>If value &lt; 00: Points Needed = Revenue / point value</code><code>If value &gt;= 00: BKNs = (Revenue x 75%) / BKN Value</code><code>If value &gt;= 00: Points = (Revenue x 25%) / point value</code><code>Point value = /bin/bash.05 (or /bin/bash.055 for Free Credit Activities)</code></div></div>
+        </div>
+
+    </div>
+
     <div class="footer"><p>EF Ambassador Program - ROI Calculator | 1 Point = $0.05 USD | 1,000 bonus pts per BKN</p></div>
 
     <script>
@@ -210,7 +272,8 @@
             for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
             for (var i = 0; i < contents.length; i++) contents[i].classList.remove('active');
             if (tab === 'freeweeks') { btns[0].classList.add('active'); document.getElementById('tab-freeweeks').classList.add('active'); }
-            else { btns[1].classList.add('active'); document.getElementById('tab-challenges').classList.add('active'); }
+            else if (tab === 'challenges') { btns[1].classList.add('active'); document.getElementById('tab-challenges').classList.add('active'); }
+            else { btns[2].classList.add('active'); document.getElementById('tab-rewards').classList.add('active'); }
         }
 
         function selectROI(el, tab) {
@@ -218,7 +281,7 @@
             for (var i = 0; i < opts.length; i++) opts[i].classList.remove('active');
             el.classList.add('active');
             document.getElementById('customROI_' + tab).value = el.getAttribute('data-roi');
-            if (tab === 'fw') calculateFreeWeeks(); else calculateChallenge();
+            if (tab === 'fw') calculateFreeWeeks(); else if (tab === 'ch') calculateChallenge(); else calculateRewards();
         }
 
         function formatNumber(num) { return num.toLocaleString('en-US'); }
@@ -296,14 +359,67 @@
             document.getElementById('ch_summary').innerHTML = 'Award <strong>' + formatNumber(Math.round(pointsToGive)) + ' points</strong> ($' + dollarValue.toFixed(2) + ') for <strong>' + category + '</strong> in <strong>' + market + '</strong>' + hourText + ' to achieve <strong>' + roiPercent + '% ROI</strong>.';
         }
 
+
+        function calculateRewards() {
+            var rewardType = document.getElementById('rw_type').value;
+            var rewardValue = parseFloat(document.getElementById('rw_value').value) || 0;
+            var roiPercent = parseFloat(document.getElementById('customROI_rw').value) || 0;
+            var bknValue = parseFloat(document.getElementById('rw_bknValue').value) || 0;
+            
+            // Determine point value based on reward type
+            var pointVal = (rewardType === 'Free Credit Activities') ? 0.055 : 0.05;
+            
+            // Determine if BKNs are needed (reward >= 00)
+            var needsBkns = rewardValue >= 300;
+            
+            // Show/hide BKN input and results
+            document.getElementById('rw_bknGroup').style.display = needsBkns ? 'block' : 'none';
+            document.getElementById('rw_bknsResult').style.display = needsBkns ? 'block' : 'none';
+            document.getElementById('rw_totalResult').style.display = needsBkns ? 'block' : 'none';
+            
+            // Calculate
+            var roiMultiplier = 1 + (roiPercent / 100);
+            var requiredRevenue = rewardValue * roiMultiplier;
+            
+            document.getElementById('rw_revenue').textContent = '$' + formatNumber(Math.round(requiredRevenue));
+            document.getElementById('rw_revenueBreakdown').textContent = '$' + formatNumber(rewardValue) + ' x ' + roiMultiplier + ' = $' + formatNumber(Math.round(requiredRevenue));
+            
+            if (needsBkns) {
+                // 75% BKNs / 25% Points
+                var revenueFromBKNs = requiredRevenue * 0.75;
+                var revenueFromPoints = requiredRevenue * 0.25;
+                var bknsNeeded = bknValue > 0 ? revenueFromBKNs / bknValue : 0;
+                var pointsNeeded = revenueFromPoints / pointVal;
+                var bonusPoints = Math.ceil(bknsNeeded) * BONUS_POINTS_PER_BKN;
+                var totalPoints = pointsNeeded + bonusPoints;
+                
+                var bknsDisplay = bknsNeeded % 1 === 0 ? bknsNeeded : bknsNeeded.toFixed(2);
+                document.getElementById('rw_bkns').innerHTML = bknsDisplay + '<span class="unit">BKNs</span>';
+                document.getElementById('rw_bknsBreakdown').textContent = '75% of $' + formatNumber(Math.round(requiredRevenue)) + ' / $' + formatNumber(bknValue) + ' per BKN';
+                document.getElementById('rw_points').innerHTML = formatNumber(Math.round(pointsNeeded)) + '<span class="unit">pts</span>';
+                document.getElementById('rw_pointsBreakdown').textContent = '25% of $' + formatNumber(Math.round(requiredRevenue)) + ' / $' + pointVal + ' per point';
+                document.getElementById('rw_totalPoints').innerHTML = formatNumber(Math.round(totalPoints)) + '<span class="unit">pts</span>';
+                document.getElementById('rw_totalBreakdown').textContent = formatNumber(Math.round(pointsNeeded)) + ' + (' + Math.ceil(bknsNeeded) + ' BKNs x 1,000 bonus pts)';
+                document.getElementById('rw_summary').innerHTML = 'For <strong>' + (rewardType || 'this reward') + '</strong> ($' + formatNumber(rewardValue) + '): ask for <strong>' + bknsDisplay + ' BKNs</strong> and <strong>' + formatNumber(Math.round(totalPoints)) + ' points</strong> to achieve <strong>' + roiPercent + '% ROI</strong>.';
+            } else {
+                // Points only
+                var pointsNeeded = requiredRevenue / pointVal;
+                document.getElementById('rw_points').innerHTML = formatNumber(Math.round(pointsNeeded)) + '<span class="unit">pts</span>';
+                document.getElementById('rw_pointsBreakdown').textContent = '$' + formatNumber(Math.round(requiredRevenue)) + ' / $' + pointVal + ' per point';
+                document.getElementById('rw_summary').innerHTML = 'For <strong>' + (rewardType || 'this reward') + '</strong> ($' + formatNumber(rewardValue) + '): ask for <strong>' + formatNumber(Math.round(pointsNeeded)) + ' points</strong> to achieve <strong>' + roiPercent + '% ROI</strong>.';
+            }
+        }
+
         document.getElementById('weekCost').addEventListener('input', calculateFreeWeeks);
         document.getElementById('bknValue').addEventListener('input', calculateFreeWeeks);
         document.getElementById('customROI_fw').addEventListener('input', function() { calculateFreeWeeks(); });
         document.getElementById('customROI_ch').addEventListener('input', function() { calculateChallenge(); });
+        document.getElementById('customROI_rw').addEventListener('input', function() { calculateRewards(); });
         document.getElementById('ch_hours').addEventListener('input', calculateChallenge);
 
         populateDropdowns();
         calculateFreeWeeks();
+        calculateRewards();
     </script>
 </body>
 </html>
