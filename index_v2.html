@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EF Ambassador Program - ROI Calculator</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #F8F9FA; color: #1B3A5C; min-height: 100vh; }
+        .header { background: #FFFFFF; padding: 20px 40px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 20px; }
+        .header svg { width: 60px; height: 60px; }
+        .header-text { display: flex; flex-direction: column; }
+        .header-title { font-size: 22px; font-weight: 700; color: #1B3A5C; }
+        .header-subtitle { font-size: 14px; color: #6B7C8F; margin-top: 2px; }
+        .container { max-width: 1100px; margin: 40px auto; padding: 0 24px; }
+        .page-title { text-align: center; margin-bottom: 40px; }
+        .page-title h1 { font-size: 32px; font-weight: 700; color: #1B3A5C; margin-bottom: 8px; }
+        .page-title p { font-size: 16px; color: #6B7C8F; }
+        .badge { display: inline-block; background: #D50072; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-bottom: 12px; letter-spacing: 0.5px; }
+        .tab-nav { display: flex; justify-content: center; gap: 12px; margin-bottom: 32px; }
+        .tab-btn { padding: 14px 32px; border: 2px solid #E8ECF0; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #FFFFFF; color: #4A5D6F; }
+        .tab-btn:hover { border-color: #D50072; background: #FFF5F9; }
+        .tab-btn.active { border-color: #D50072; background: #D50072; color: white; box-shadow: 0 4px 12px rgba(213, 0, 114, 0.3); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .calculator-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start; }
+        @media (max-width: 768px) { .calculator-grid { grid-template-columns: 1fr; } }
+        .card { background: #FFFFFF; border-radius: 16px; padding: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #E8ECF0; }
+        .card-title { font-size: 18px; font-weight: 700; color: #1B3A5C; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; }
+        .card-title .icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+        .icon-input { background: #D4EDFC; color: #5AABEE; }
+        .icon-output { background: #FADCE8; color: #D50072; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; color: #4A5D6F; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px; }
+        .form-group .helper { font-size: 12px; color: #8A9BAD; margin-top: 4px; font-weight: 400; text-transform: none; letter-spacing: 0; }
+        .form-group input, .form-group select { width: 100%; padding: 12px 16px; border: 2px solid #E8ECF0; border-radius: 10px; font-size: 16px; color: #1B3A5C; transition: border-color 0.2s, box-shadow 0.2s; background: #FAFBFC; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #D50072; box-shadow: 0 0 0 3px rgba(213, 0, 114, 0.1); background: #FFFFFF; }
+        .form-group input::placeholder { color: #B8C4D0; }
+        .input-prefix { position: relative; }
+        .input-prefix span { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #8A9BAD; font-size: 16px; font-weight: 500; }
+        .input-prefix input { padding-left: 32px; }
+        .input-suffix { position: relative; }
+        .input-suffix span { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: #8A9BAD; font-size: 16px; font-weight: 500; }
+        .input-suffix input { padding-right: 36px; }
+        .roi-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .roi-option { padding: 10px 8px; border: 2px solid #E8ECF0; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.2s; font-size: 14px; font-weight: 600; color: #4A5D6F; background: #FAFBFC; }
+        .roi-option:hover { border-color: #D50072; background: #FFF5F9; }
+        .roi-option.active { border-color: #D50072; background: #D50072; color: white; }
+        .split-info { display: flex; gap: 12px; margin-top: 8px; }
+        .split-badge { flex: 1; padding: 10px 12px; border-radius: 10px; text-align: center; font-size: 13px; font-weight: 600; }
+        .split-badge.points { background: #F0E6FF; color: #7B2D8B; }
+        .split-badge.bkns { background: #FADCE8; color: #D50072; }
+        .results-card { border: 2px solid #D50072; background: linear-gradient(135deg, #FFFFFF 0%, #FFF8FB 100%); }
+        .result-item { padding: 16px 0; border-bottom: 1px solid #F0E4EA; }
+        .result-item:last-child { border-bottom: none; padding-bottom: 0; }
+        .result-item:first-child { padding-top: 0; }
+        .result-label { font-size: 13px; color: #6B7C8F; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px; font-weight: 600; }
+        .result-value { font-size: 28px; font-weight: 700; color: #1B3A5C; }
+        .result-value.highlight { color: #D50072; }
+        .result-value .unit { font-size: 16px; font-weight: 500; color: #6B7C8F; margin-left: 4px; }
+        .result-breakdown { font-size: 12px; color: #8A9BAD; margin-top: 4px; }
+        .results-divider { height: 2px; background: linear-gradient(90deg, #D50072, #5AABEE); border-radius: 1px; margin: 8px 0; }
+        .formula-section { margin-top: 40px; }
+        .formula-card { background: #1B3A5C; color: white; border-radius: 16px; padding: 32px; }
+        .formula-card h3 { font-size: 18px; margin-bottom: 16px; color: #5AABEE; }
+        .formula-card code { display: block; background: rgba(255,255,255,0.08); padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; color: #E0F0FF; border-left: 3px solid #D50072; }
+        .footer { text-align: center; padding: 40px 24px; color: #8A9BAD; font-size: 13px; }
+        .hours-group { display: none; }
+        .hours-group.visible { display: block; }
+        .cost-display { background: #F0F7FF; border: 2px solid #D4EDFC; border-radius: 10px; padding: 12px 16px; font-size: 16px; color: #1B3A5C; font-weight: 600; }
+
+        /* MODEL SWITCH BUTTON */
+        .model-switch-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 12px 24px;
+            border: 2px solid #E8ECF0;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #FFFFFF;
+            color: #4A5D6F;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .model-switch-btn:hover {
+            border-color: #D50072;
+            background: #FFF5F9;
+            box-shadow: 0 6px 20px rgba(213, 0, 114, 0.15);
+        }
+        .model-switch-btn.model2-active {
+            border-color: #5AABEE;
+            background: #F0F7FF;
+            color: #1B3A5C;
+        }
+        .model-switch-btn .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #8A9BAD;
+        }
+        .model-switch-btn.model2-active .dot {
+            background: #5AABEE;
+        }
+
+        /* MODEL BANNER */
+        .model-banner {
+            display: none;
+            background: linear-gradient(90deg, #5AABEE, #1B3A5C);
+            color: white;
+            text-align: center;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .model-banner.visible { display: block; }
+
+        /* BONUS INPUT (hidden by default) */
+        .bonus-group { display: none; }
+        .bonus-group.visible { display: block; }
+
+        /* Model 2 highlight on results */
+        .model2-indicator {
+            display: none;
+            background: #E8F4FD;
+            border: 1px solid #5AABEE;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 12px;
+            color: #1B3A5C;
+            font-weight: 600;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        .model2-indicator.visible { display: block; }
+    </style>
+</head>
+<body>
+    <!-- Model 2 Banner -->
+    <div class="model-banner" id="modelBanner">&#128300; NEW MODEL ACTIVE - Bonus value included in BKN calculation</div>
+
+    <div class="header">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="50" r="46" fill="none" stroke="#003B5C" stroke-width="4"/>
+            <text x="50" y="65" text-anchor="middle" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="40" font-weight="bold" fill="#003B5C" letter-spacing="-2">EF</text>
+        </svg>
+        <div class="header-text">
+            <div class="header-title">Ambassador Program</div>
+            <div class="header-subtitle">Return Of Investment (ROI) Calculator</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="page-title">
+            <h1>ROI Calculator</h1>
+            <p>Calculate the optimal points and BKNs to achieve your target ROI.</p>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-nav">
+            <div class="tab-btn active" onclick="switchTab('freeweeks')">&#127873; Free Weeks</div>
+            <div class="tab-btn" onclick="switchTab('challenges')">&#127942; Challenges</div>
+            <div class="tab-btn" onclick="switchTab('rewards')">&#127941; Rewards</div>
+        </div>
+
+        <!-- FREE WEEKS TAB -->
+        <div class="tab-content active" id="tab-freeweeks">
+            <div style="text-align:center; margin-bottom: 24px;"><span class="badge">FREE WEEKS</span></div>
+            <div class="calculator-grid">
+                <div class="card">
+                    <div class="card-title"><div class="icon icon-input">&#128202;</div> Input Parameters</div>
+                    <div class="form-group">
+                        <label>Cost of Free Week(s)</label>
+                        <div class="input-prefix"><span>$</span><input type="number" id="weekCost" placeholder="800" value="800" min="0" step="50"></div>
+                        <p class="helper">Dollar value of the weeks being given as reward</p>
+                    </div>
+                    <div class="form-group">
+                        <label>Average BKN Value</label>
+                        <div class="input-prefix"><span>$</span><input type="number" id="bknValue" placeholder="600" value="600" min="0" step="50"></div>
+                        <p class="helper">Value of 1 referred booking if it had been paid</p>
+                        <p class="helper" style="margin-top: 8px; font-style: italic;">The cost is calculated by getting the average cost per opp per booking from all paid channels</p>
+                    </div>
+                    <!-- BONUS POINTS INPUT (Model 2 only) -->
+                    <div class="form-group bonus-group" id="fw_bonusGroup">
+                        <label>Bonus Points per BKN</label>
+                        <input type="number" id="fw_bonusPerBkn" placeholder="1000" value="1000" min="0" step="500" oninput="calculateFreeWeeks()">
+                        <p class="helper">Points automatically awarded per booking (default: 1,000)</p>
+                    </div>
+                    <div class="form-group">
+                        <label>Target ROI</label>
+                        <div class="roi-selector">
+                            <div class="roi-option active" data-roi="100" data-tab="fw" onclick="selectROI(this,'fw')">100%</div>
+                            <div class="roi-option" data-roi="200" data-tab="fw" onclick="selectROI(this,'fw')">200%</div>
+                            <div class="roi-option" data-roi="300" data-tab="fw" onclick="selectROI(this,'fw')">300%</div>
+                            <div class="roi-option" data-roi="400" data-tab="fw" onclick="selectROI(this,'fw')">400%</div>
+                        </div>
+                        <div style="margin-top: 12px;"><div class="input-suffix"><span>%</span><input type="number" id="customROI_fw" placeholder="Custom" value="100" min="0" step="50"></div></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Payment Split (Fixed)</label>
+                        <div class="split-info"><div class="split-badge points">25% Points</div><div class="split-badge bkns">75% BKNs</div></div>
+                        <p class="helper">Fixed payment structure for Free Week rewards</p>
+                    </div>
+                </div>
+                <div class="card results-card">
+                    <div class="model2-indicator" id="fw_model2tag">&#128300; New Model - Bonus value included in BKN value</div>
+                    <div class="card-title"><div class="icon icon-output">&#127919;</div> Results</div>
+                    <div class="result-item"><div class="result-label">Required Revenue</div><div class="result-value" id="fw_revenue">,600</div><div class="result-breakdown" id="fw_revenueBreakdown"></div></div>
+                    <div class="results-divider"></div>
+                    <div class="result-item"><div class="result-label">BKNs Needed</div><div class="result-value highlight" id="fw_bkns">2<span class="unit">BKNs</span></div><div class="result-breakdown" id="fw_bknsBreakdown"></div></div>
+                    <div class="result-item"><div class="result-label">Points Needed (before bonus)</div><div class="result-value" id="fw_points">8,000<span class="unit">pts</span></div><div class="result-breakdown" id="fw_pointsBreakdown"></div></div>
+                    <div class="results-divider"></div>
+                    <div class="result-item"><div class="result-label">Total Points Required (with BKN bonus)</div><div class="result-value highlight" id="fw_totalPoints">10,000<span class="unit">pts</span></div><div class="result-breakdown" id="fw_totalBreakdown"></div></div>
+                    <div class="result-item" style="background: #F8F0F5; border-radius: 10px; padding: 16px; margin-top: 8px;"><div class="result-label">&#128161; Summary</div><div id="fw_summary" style="font-size: 14px; color: #1B3A5C; line-height: 1.6; margin-top: 8px;"></div></div>
+                </div>
+            </div>
+            <div class="formula-section"><div class="formula-card"><h3>&#128208; Formula Reference</h3><div id="fw_formulas"></div></div></div>
+        </div>
+
+        <!-- CHALLENGES TAB -->
+        <div class="tab-content" id="tab-challenges">
+            <div style="text-align:center; margin-bottom: 24px;"><span class="badge">CHALLENGES</span></div>
+            <div class="calculator-grid">
+                <div class="card">
+                    <div class="card-title"><div class="icon icon-input">&#128202;</div> Input Parameters</div>
+                    <div class="form-group">
+                        <label>Market</label>
+                        <select id="ch_market" onchange="updateChallengeCost()"><option value="">-- Select Market --</option></select>
+                        <p class="helper">Select your market</p>
+                    </div>
+                    <div class="form-group">
+                        <label>Challenge Category</label>
+                        <select id="ch_category" onchange="updateChallengeCost()"><option value="">-- Select Category --</option></select>
+                        <p class="helper">Select the challenge type</p>
+                    </div>
+                    <div class="form-group hours-group" id="ch_hoursGroup">
+                        <label>Number of Hours</label>
+                        <input type="number" id="ch_hours" placeholder="1" value="1" min="1" step="1" oninput="calculateChallenge()">
+                        <p class="helper">How many hours will the ambassador attend?</p>
+                    </div>
+                    <div class="form-group">
+                        <label>Cost per Unit</label>
+                        <div class="cost-display" id="ch_costDisplay">/bin/bash.00</div>
+                        <p class="helper" id="ch_costHelper">Auto-filled based on market and category selection</p>
+                    </div>
+                    <div class="form-group">
+                        <label>Target ROI</label>
+                        <div class="roi-selector">
+                            <div class="roi-option active" data-roi="100" data-tab="ch" onclick="selectROI(this,'ch')">100%</div>
+                            <div class="roi-option" data-roi="200" data-tab="ch" onclick="selectROI(this,'ch')">200%</div>
+                            <div class="roi-option" data-roi="300" data-tab="ch" onclick="selectROI(this,'ch')">300%</div>
+                            <div class="roi-option" data-roi="400" data-tab="ch" onclick="selectROI(this,'ch')">400%</div>
+                        </div>
+                        <div style="margin-top: 12px;"><div class="input-suffix"><span>%</span><input type="number" id="customROI_ch" placeholder="Custom" value="100" min="0" step="50"></div></div>
+                    </div>
+                </div>
+                <div class="card results-card">
+                    <div class="card-title"><div class="icon icon-output">&#127919;</div> Results</div>
+                    <div class="result-item"><div class="result-label">Total Challenge Cost</div><div class="result-value" id="ch_totalCost">/bin/bash.00</div><div class="result-breakdown" id="ch_costBreakdown">Select market and category</div></div>
+                    <div class="results-divider"></div>
+                    <div class="result-item"><div class="result-label">Points to Award Ambassador</div><div class="result-value highlight" id="ch_pointsToGive">0<span class="unit">pts</span></div><div class="result-breakdown" id="ch_pointsBreakdown">Points value that achieves target ROI</div></div>
+                    <div class="result-item"><div class="result-label">Dollar Value of Points</div><div class="result-value" id="ch_dollarValue">/bin/bash.00</div><div class="result-breakdown" id="ch_dollarBreakdown">Points x /bin/bash.05 per point</div></div>
+                    <div class="results-divider"></div>
+                    <div class="result-item" style="background: #F8F0F5; border-radius: 10px; padding: 16px; margin-top: 8px;"><div class="result-label">&#128161; Summary</div><div id="ch_summary" style="font-size: 14px; color: #1B3A5C; line-height: 1.6; margin-top: 8px;">Select a market and category to see results.</div></div>
+                </div>
+            </div>
+            <div class="formula-section"><div class="formula-card"><h3>&#128208; Formula Reference</h3><code>Total Cost = Unit Cost x Hours (for hourly categories)</code><code>Points to Award = Total Cost / ((1 + ROI%) x /bin/bash.05)</code><code>Dollar Value = Points x /bin/bash.05</code></div></div>
+        </div>
+
+        <!-- REWARDS TAB -->
+        <div class="tab-content" id="tab-rewards">
+            <div style="text-align:center; margin-bottom: 24px;"><span class="badge">REWARDS</span></div>
+            <div class="calculator-grid">
+                <div class="card">
+                    <div class="card-title"><div class="icon icon-input">&#128202;</div> Input Parameters</div>
+                    <div class="form-group">
+                        <label>Reward Type</label>
+                        <select id="rw_type" onchange="calculateRewards()">
+                            <option value="">-- Select Reward Type --</option>
+                            <option value="Gift Cards">Gift Cards</option>
+                            <option value="Free Credit Activities">Free Credit Activities</option>
+                            <option value="Great Experiences">Great Experiences</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Gifts">Gifts</option>
+                            <option value="Technology">Technology</option>
+                            <option value="Charity">Charity</option>
+                            <option value="Merch">Merch</option>
+                            <option value="Events">Events</option>
+                        </select>
+                        <p class="helper">Select the type of reward being offered</p>
+                    </div>
+                    <div class="form-group">
+                        <label>Reward Value</label>
+                        <div class="input-prefix"><span>$</span><input type="number" id="rw_value" placeholder="100" value="100" min="0" step="10" oninput="calculateRewards()"></div>
+                        <p class="helper">Dollar value of the reward being given</p>
+                    </div>
+                    <div class="form-group" id="rw_bknGroup" style="display:none;">
+                        <label>Average BKN Value</label>
+                        <div class="input-prefix"><span>$</span><input type="number" id="rw_bknValue" placeholder="600" value="600" min="0" step="50" oninput="calculateRewards()"></div>
+                        <p class="helper">Value of 1 referred booking (only needed for rewards 00+)</p>
+                    </div>
+                    <!-- BONUS POINTS INPUT (Model 2 only) -->
+                    <div class="form-group bonus-group" id="rw_bonusGroup">
+                        <label>Bonus Points per BKN</label>
+                        <input type="number" id="rw_bonusPerBkn" placeholder="1000" value="1000" min="0" step="500" oninput="calculateRewards()">
+                        <p class="helper">Points automatically awarded per booking (default: 1,000)</p>
+                    </div>
+                    <div class="form-group">
+                        <label>Target ROI</label>
+                        <div class="roi-selector">
+                            <div class="roi-option active" data-roi="100" data-tab="rw" onclick="selectROI(this,'rw')">100%</div>
+                            <div class="roi-option" data-roi="200" data-tab="rw" onclick="selectROI(this,'rw')">200%</div>
+                            <div class="roi-option" data-roi="300" data-tab="rw" onclick="selectROI(this,'rw')">300%</div>
+                            <div class="roi-option" data-roi="400" data-tab="rw" onclick="selectROI(this,'rw')">400%</div>
+                        </div>
+                        <div style="margin-top: 12px;"><div class="input-suffix"><span>%</span><input type="number" id="customROI_rw" placeholder="Custom" value="100" min="0" step="50"></div></div>
+                    </div>
+                </div>
+                <div class="card results-card">
+                    <div class="model2-indicator" id="rw_model2tag">&#128300; New Model - Bonus value included in BKN value</div>
+                    <div class="card-title"><div class="icon icon-output">&#127919;</div> Results</div>
+                    <div class="result-item"><div class="result-label">Required Revenue</div><div class="result-value" id="rw_revenue">/bin/bash</div><div class="result-breakdown" id="rw_revenueBreakdown">Cost x (1 + ROI%)</div></div>
+                    <div class="results-divider"></div>
+                    <div class="result-item" id="rw_bknsResult" style="display:none;"><div class="result-label">BKNs Needed</div><div class="result-value highlight" id="rw_bkns">0<span class="unit">BKNs</span></div><div class="result-breakdown" id="rw_bknsBreakdown"></div></div>
+                    <div class="result-item"><div class="result-label">Points Needed</div><div class="result-value" id="rw_points">0<span class="unit">pts</span></div><div class="result-breakdown" id="rw_pointsBreakdown"></div></div>
+                    <div class="result-item" id="rw_totalResult" style="display:none;"><div class="result-label">Total Points Required (with BKN bonus)</div><div class="result-value highlight" id="rw_totalPoints">0<span class="unit">pts</span></div><div class="result-breakdown" id="rw_totalBreakdown"></div></div>
+                    <div class="results-divider"></div>
+                    <div class="result-item" style="background: #F8F0F5; border-radius: 10px; padding: 16px; margin-top: 8px;"><div class="result-label">&#128161; Summary</div><div id="rw_summary" style="font-size: 14px; color: #1B3A5C; line-height: 1.6; margin-top: 8px;">Select a reward type and value to see results.</div></div>
+                </div>
+            </div>
+            <div class="formula-section"><div class="formula-card"><h3>&#128208; Formula Reference</h3><div id="rw_formulas"></div></div></div>
+        </div>
+    </div>
+
+    <div class="footer"><p>EF Ambassador Program - ROI Calculator | 1 Point = /bin/bash.05 USD | 1,000 bonus pts per BKN</p></div>
+
+    <!-- SWITCH MODEL BUTTON -->
+    <div class="model-switch-btn" id="modelSwitchBtn" onclick="toggleModel()">
+        <span class="dot"></span>
+        <span id="modelSwitchLabel">Switch Model</span>
+    </div>
+
+    <script>
+        var challengeData = {"Referrals":{"Argentina & Uruguay":3.0,"Austria":23.0,"Belgium (Dutch)":29.0,"Belgium (French) & Luxembourg":30.0,"Brazil":4.0,"Canada (ENG)":29.0,"Canada (French)":11.0,"Chile":9.0,"Colombia":7.0,"Costa Rica":9.0,"Czech Republic":11.0,"Denmark":14.0,"Ecuador":5.0,"Finland":7.0,"France":29.0,"Germany":26.0,"Hong Kong":37.0,"Hungary":8.0,"Indonesia":3.0,"Italy":31.0,"Japan":135.0,"Mexico":10.0,"Netherlands":21.0,"Norway":13.0,"Panama":9.0,"Peru":3.0,"Poland":12.0,"Portugal":6.0,"Romania":21.55,"Saudi Arabia":11.0,"Slovakia":6.0,"South Korea":28.0,"Spain":27.0,"Sweden":19.0,"Switzerland (DE)":52.0,"Switzerland (FR)":41.0,"Switzerland (IT)":26.0,"Taiwan":34.0,"Turkey":8.0,"USA":22.0,"Venezuela":9.0,"Vietnam":17.0},"Testimonial Video":{"Argentina & Uruguay":9.0,"Austria":11.25,"Belgium (Dutch)":11.25,"Belgium (French) & Luxembourg":11.25,"Brazil":9.0,"Canada (ENG)":12.75,"Canada (French)":12.75,"Chile":9.0,"Colombia":9.0,"Costa Rica":9.0,"Czech Republic":11.25,"Denmark":11.25,"Ecuador":9.0,"Finland":11.25,"France":11.25,"Germany":11.25,"Hong Kong":7.95,"Hungary":11.25,"Indonesia":7.95,"Italy":11.25,"Japan":7.95,"Mexico":9.0,"Netherlands":11.25,"Norway":11.25,"Panama":9.0,"Peru":9.0,"Poland":11.25,"Portugal":11.25,"Romania":11.25,"Saudi Arabia":7.95,"Slovakia":11.25,"South Korea":7.95,"Spain":11.25,"Sweden":11.25,"Switzerland (DE)":11.25,"Switzerland (FR)":11.25,"Switzerland (IT)":11.25,"Taiwan":7.95,"Turkey":11.25,"USA":12.75,"Venezuela":9.0,"Vietnam":7.95},"Reviews":{"Argentina & Uruguay":4.0,"Austria":8.0,"Belgium (Dutch)":8.0,"Belgium (French) & Luxembourg":8.0,"Brazil":4.0,"Canada (ENG)":10.0,"Canada (French)":10.0,"Chile":4.0,"Colombia":4.0,"Costa Rica":4.0,"Czech Republic":8.0,"Denmark":8.0,"Ecuador":4.0,"Finland":8.0,"France":8.0,"Germany":8.0,"Hong Kong":5.0,"Hungary":8.0,"Indonesia":5.0,"Italy":8.0,"Japan":5.0,"Mexico":4.0,"Netherlands":8.0,"Norway":8.0,"Panama":4.0,"Peru":4.0,"Poland":8.0,"Portugal":8.0,"Romania":8.0,"Saudi Arabia":5.0,"Slovakia":8.0,"South Korea":5.0,"Spain":8.0,"Sweden":8.0,"Switzerland (DE)":8.0,"Switzerland (FR)":8.0,"Switzerland (IT)":8.0,"Taiwan":5.0,"Turkey":8.0,"USA":10.0,"Venezuela":4.0,"Vietnam":5.0},"Sales Support":{"Argentina & Uruguay":3.28,"Austria":16.14,"Belgium (Dutch)":15.05,"Belgium (French) & Luxembourg":15.05,"Brazil":3.23,"Canada (ENG)":13.92,"Canada (French)":13.92,"Chile":5.79,"Colombia":4.58,"Costa Rica":5.99,"Czech Republic":7.38,"Denmark":19.95,"Ecuador":0.5,"Finland":14.4,"France":13.73,"Germany":16.89,"Hong Kong":6.86,"Hungary":7.97,"Indonesia":5.74,"Italy":9.31,"Japan":10.44,"Mexico":3.4,"Netherlands":15.81,"Norway":18.27,"Panama":5.45,"Peru":3.04,"Poland":11.99,"Portugal":9.65,"Romania":10.14,"Saudi Arabia":12.28,"Slovakia":7.37,"South Korea":12.77,"Spain":12.25,"Sweden":15.39,"Switzerland (DE)":21.99,"Switzerland (FR)":21.99,"Switzerland (IT)":21.99,"Taiwan":5.45,"Turkey":10.43,"USA":7.27,"Venezuela":0.92,"Vietnam":4.01},"Events & Fairs":{"Argentina & Uruguay":3.28,"Austria":16.14,"Belgium (Dutch)":15.05,"Belgium (French) & Luxembourg":15.05,"Brazil":3.23,"Canada (ENG)":13.92,"Canada (French)":13.92,"Chile":5.79,"Colombia":4.58,"Costa Rica":5.99,"Czech Republic":7.38,"Denmark":19.95,"Ecuador":0.5,"Finland":14.4,"France":13.73,"Germany":16.89,"Hong Kong":6.86,"Hungary":7.97,"Indonesia":5.74,"Italy":9.31,"Japan":10.44,"Mexico":3.4,"Netherlands":15.81,"Norway":18.27,"Panama":5.45,"Peru":3.04,"Poland":11.99,"Portugal":9.65,"Romania":10.14,"Saudi Arabia":12.28,"Slovakia":7.37,"South Korea":12.77,"Spain":12.25,"Sweden":15.39,"Switzerland (DE)":21.99,"Switzerland (FR)":21.99,"Switzerland (IT)":21.99,"Taiwan":5.45,"Turkey":10.43,"USA":7.27,"Venezuela":0.92,"Vietnam":4.01},"School & Uni connections":{"Argentina & Uruguay":3.28,"Austria":16.14,"Belgium (Dutch)":15.05,"Belgium (French) & Luxembourg":15.05,"Brazil":3.23,"Canada (ENG)":13.92,"Canada (French)":13.92,"Chile":5.79,"Colombia":4.58,"Costa Rica":5.99,"Czech Republic":7.38,"Denmark":19.95,"Ecuador":0.5,"Finland":14.4,"France":13.73,"Germany":16.89,"Hong Kong":6.86,"Hungary":7.97,"Indonesia":5.74,"Italy":9.31,"Japan":10.44,"Mexico":3.4,"Netherlands":15.81,"Norway":18.27,"Panama":5.45,"Peru":3.04,"Poland":11.99,"Portugal":9.65,"Romania":10.14,"Saudi Arabia":12.28,"Slovakia":7.37,"South Korea":12.77,"Spain":12.25,"Sweden":15.39,"Switzerland (DE)":21.99,"Switzerland (FR)":21.99,"Switzerland (IT)":21.99,"Taiwan":5.45,"Turkey":10.43,"USA":7.27,"Venezuela":0.92,"Vietnam":4.01},"SM Content Generation Static":{"Argentina & Uruguay":6.3,"Austria":8.25,"Belgium (Dutch)":8.25,"Belgium (French) & Luxembourg":8.25,"Brazil":6.3,"Canada (ENG)":6.3,"Canada (French)":6.3,"Chile":6.3,"Colombia":6.3,"Costa Rica":6.3,"Czech Republic":8.25,"Denmark":8.25,"Ecuador":6.3,"Finland":8.25,"France":8.25,"Germany":8.25,"Hong Kong":5.25,"Hungary":8.25,"Indonesia":5.25,"Italy":8.25,"Japan":5.25,"Mexico":6.3,"Netherlands":8.25,"Norway":8.25,"Panama":6.3,"Peru":6.3,"Poland":8.25,"Portugal":8.25,"Romania":8.25,"Saudi Arabia":5.25,"Slovakia":8.25,"South Korea":5.25,"Spain":8.25,"Sweden":8.25,"Switzerland (DE)":8.25,"Switzerland (FR)":8.25,"Switzerland (IT)":8.25,"Taiwan":5.25,"Turkey":8.25,"USA":6.3,"Venezuela":6.3,"Vietnam":5.25},"SM Content Generation Video":{"Argentina & Uruguay":9.0,"Austria":11.25,"Belgium (Dutch)":11.25,"Belgium (French) & Luxembourg":11.25,"Brazil":9.0,"Canada (ENG)":9.0,"Canada (French)":9.0,"Chile":9.0,"Colombia":9.0,"Costa Rica":9.0,"Czech Republic":11.25,"Denmark":11.25,"Ecuador":9.0,"Finland":11.25,"France":11.25,"Germany":11.25,"Hong Kong":7.95,"Hungary":11.25,"Indonesia":7.95,"Italy":11.25,"Japan":7.95,"Mexico":9.0,"Netherlands":11.25,"Norway":11.25,"Panama":9.0,"Peru":9.0,"Poland":11.25,"Portugal":11.25,"Romania":11.25,"Saudi Arabia":7.95,"Slovakia":11.25,"South Korea":7.95,"Spain":11.25,"Sweden":11.25,"Switzerland (DE)":11.25,"Switzerland (FR)":11.25,"Switzerland (IT)":11.25,"Taiwan":7.95,"Turkey":11.25,"USA":9.0,"Venezuela":9.0}};
+
+        var hourlyCategories = ['Sales Support', 'Events & Fairs', 'School & Uni connections'];
+        var POINT_VALUE = 0.05;
+        var FW_POINT_VALUE = 0.055;
+        var BONUS_POINTS_PER_BKN = 1000;
+        var POINTS_PERCENT = 0.25;
+        var BKNS_PERCENT = 0.75;
+
+        // MODEL STATE
+        var currentModel = 1;
+
+        function toggleModel() {
+            currentModel = currentModel === 1 ? 2 : 1;
+            var btn = document.getElementById('modelSwitchBtn');
+            var label = document.getElementById('modelSwitchLabel');
+            var banner = document.getElementById('modelBanner');
+            var bonusGroups = document.querySelectorAll('.bonus-group');
+            var model2Tags = document.querySelectorAll('.model2-indicator');
+
+            if (currentModel === 2) {
+                btn.classList.add('model2-active');
+                label.textContent = 'Switch to Model 1';
+                banner.classList.add('visible');
+                for (var i = 0; i < bonusGroups.length; i++) bonusGroups[i].classList.add('visible');
+                for (var i = 0; i < model2Tags.length; i++) model2Tags[i].classList.add('visible');
+            } else {
+                btn.classList.remove('model2-active');
+                label.textContent = 'Switch Model';
+                banner.classList.remove('visible');
+                for (var i = 0; i < bonusGroups.length; i++) bonusGroups[i].classList.remove('visible');
+                for (var i = 0; i < model2Tags.length; i++) model2Tags[i].classList.remove('visible');
+            }
+            updateFormulas();
+            calculateFreeWeeks();
+            calculateChallenge();
+            calculateRewards();
+        }
+
+        function customRound(value) {
+            var decimal = value - Math.floor(value);
+            return decimal >= 0.6 ? Math.ceil(value) : Math.floor(value);
+        }
+
+        function switchTab(tab) {
+            var btns = document.querySelectorAll('.tab-btn');
+            var contents = document.querySelectorAll('.tab-content');
+            for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+            for (var i = 0; i < contents.length; i++) contents[i].classList.remove('active');
+            if (tab === 'freeweeks') { btns[0].classList.add('active'); document.getElementById('tab-freeweeks').classList.add('active'); }
+            else if (tab === 'challenges') { btns[1].classList.add('active'); document.getElementById('tab-challenges').classList.add('active'); }
+            else { btns[2].classList.add('active'); document.getElementById('tab-rewards').classList.add('active'); }
+        }
+
+        function selectROI(el, tab) {
+            var opts = el.parentElement.querySelectorAll('.roi-option');
+            for (var i = 0; i < opts.length; i++) opts[i].classList.remove('active');
+            el.classList.add('active');
+            document.getElementById('customROI_' + tab).value = el.getAttribute('data-roi');
+            if (tab === 'fw') calculateFreeWeeks(); else if (tab === 'ch') calculateChallenge(); else calculateRewards();
+        }
+
+        function formatNumber(num) { return num.toLocaleString('en-US'); }
+
+        function calculateFreeWeeks() {
+            var cost = parseFloat(document.getElementById('weekCost').value) || 0;
+            var bknValue = parseFloat(document.getElementById('bknValue').value) || 0;
+            var roiPercent = parseFloat(document.getElementById('customROI_fw').value) || 0;
+            var roiMultiplier = 1 + (roiPercent / 100);
+            var requiredRevenue = cost * roiMultiplier;
+
+            if (currentModel === 1) {
+                // ===== MODEL 1 (ORIGINAL) =====
+                var revenueFromBKNs = requiredRevenue * BKNS_PERCENT;
+                var revenueFromPoints = requiredRevenue * POINTS_PERCENT;
+                var bknsNeeded = bknValue > 0 ? revenueFromBKNs / bknValue : 0;
+                var pointsNeeded = revenueFromPoints / FW_POINT_VALUE;
+                var bonusPoints = Math.ceil(bknsNeeded) * BONUS_POINTS_PER_BKN;
+                var totalPoints = pointsNeeded + bonusPoints;
+
+                document.getElementById('fw_revenue').textContent = '$' + formatNumber(Math.round(requiredRevenue));
+                document.getElementById('fw_revenueBreakdown').textContent = 'Cost x (1 + ' + roiPercent + '%) = $' + formatNumber(cost) + ' x ' + roiMultiplier;
+                var bknsDisplay = bknsNeeded % 1 === 0 ? bknsNeeded : bknsNeeded.toFixed(2);
+                document.getElementById('fw_bkns').innerHTML = bknsDisplay + '<span class="unit">BKNs</span>';
+                document.getElementById('fw_bknsBreakdown').textContent = '75% of $' + formatNumber(Math.round(requiredRevenue)) + ' / $' + formatNumber(bknValue) + ' per BKN';
+                document.getElementById('fw_points').innerHTML = formatNumber(Math.round(pointsNeeded)) + '<span class="unit">pts</span>';
+                document.getElementById('fw_pointsBreakdown').textContent = '25% of $' + formatNumber(Math.round(requiredRevenue)) + ' / $' + FW_POINT_VALUE + ' per point';
+                document.getElementById('fw_totalPoints').innerHTML = formatNumber(Math.round(totalPoints)) + '<span class="unit">pts</span>';
+                document.getElementById('fw_totalBreakdown').textContent = formatNumber(Math.round(pointsNeeded)) + ' + (' + Math.ceil(bknsNeeded) + ' BKNs x ' + formatNumber(BONUS_POINTS_PER_BKN) + ' bonus pts)';
+                document.getElementById('fw_summary').innerHTML = 'Ask ambassadors for <strong>' + bknsDisplay + ' BKNs</strong> and <strong>' + formatNumber(Math.round(totalPoints)) + ' points</strong> to achieve a <strong>' + roiPercent + '% ROI</strong> on the Free Week reward.';
+            } else {
+                // ===== MODEL 2 (NEW) =====
+                var bonusPerBkn = parseFloat(document.getElementById('fw_bonusPerBkn').value) || 0;
+                var bonusDollarValue = bonusPerBkn * FW_POINT_VALUE;
+                var adjustedBknValue = bknValue + bonusDollarValue;
+                var bknPortion = requiredRevenue * BKNS_PERCENT;
+                var rawBkns = adjustedBknValue > 0 ? bknPortion / adjustedBknValue : 0;
+                var bknsNeeded = customRound(rawBkns);
+                var actualValueCovered = bknsNeeded * adjustedBknValue;
+                var remainingRevenue = Math.max(0, requiredRevenue - actualValueCovered);
+                var pointsNeeded = remainingRevenue / FW_POINT_VALUE;
+                var bonusPointsTotal = bknsNeeded * bonusPerBkn;
+                var totalPoints = pointsNeeded + bonusPointsTotal;
+
+                document.getElementById('fw_revenue').textContent = '$' + formatNumber(Math.round(requiredRevenue));
+                document.getElementById('fw_revenueBreakdown').textContent = 'Cost x (1 + ' + roiPercent + '%) = $' + formatNumber(cost) + ' x ' + roiMultiplier;
+                document.getElementById('fw_bkns').innerHTML = bknsNeeded + '<span class="unit">BKNs</span>';
+                document.getElementById('fw_bknsBreakdown').textContent = '75% of $' + formatNumber(Math.round(requiredRevenue)) + ' / $' + formatNumber(adjustedBknValue) + ' adjusted BKN value (raw: ' + rawBkns.toFixed(2) + ')';
+                document.getElementById('fw_points').innerHTML = formatNumber(Math.round(pointsNeeded)) + '<span class="unit">pts</span>';
+                document.getElementById('fw_pointsBreakdown').textContent = 'Remaining: $' + formatNumber(Math.round(requiredRevenue)) + ' - $' + formatNumber(Math.round(actualValueCovered)) + ' = $' + formatNumber(Math.round(remainingRevenue)) + ' / $' + FW_POINT_VALUE;
+                document.getElementById('fw_totalPoints').innerHTML = formatNumber(Math.round(totalPoints)) + '<span class="unit">pts</span>';
+                document.getElementById('fw_totalBreakdown').textContent = formatNumber(Math.round(pointsNeeded)) + ' + (' + bknsNeeded + ' BKNs x ' + formatNumber(bonusPerBkn) + ' bonus pts)';
+                document.getElementById('fw_summary').innerHTML = 'Ask ambassadors for <strong>' + bknsNeeded + ' BKNs</strong> and <strong>' + formatNumber(Math.round(totalPoints)) + ' points</strong> to achieve a <strong>' + roiPercent + '% ROI</strong> on the Free Week reward.<br><small style="color:#5AABEE;">Adjusted BKN value: $' + formatNumber(bknValue) + ' + $' + bonusDollarValue.toFixed(2) + ' bonus = $' + formatNumber(adjustedBknValue) + '</small>';
+            }
+        }
+
+        function populateDropdowns() {
+            var marketSelect = document.getElementById('ch_market');
+            var categorySelect = document.getElementById('ch_category');
+            var markets = Object.keys(challengeData['Referrals']).sort();
+            for (var i = 0; i < markets.length; i++) { var opt = document.createElement('option'); opt.value = markets[i]; opt.textContent = markets[i]; marketSelect.appendChild(opt); }
+            var categories = Object.keys(challengeData).sort();
+            for (var i = 0; i < categories.length; i++) { var opt = document.createElement('option'); opt.value = categories[i]; opt.textContent = categories[i] + (hourlyCategories.indexOf(categories[i]) >= 0 ? ' (per hour)' : ''); categorySelect.appendChild(opt); }
+        }
+
+        function updateChallengeCost() {
+            var market = document.getElementById('ch_market').value;
+            var category = document.getElementById('ch_category').value;
+            var hoursGroup = document.getElementById('ch_hoursGroup');
+            if (hourlyCategories.indexOf(category) >= 0) { hoursGroup.classList.add('visible'); document.getElementById('ch_costHelper').textContent = 'Cost per hour for this category in your market'; }
+            else { hoursGroup.classList.remove('visible'); document.getElementById('ch_costHelper').textContent = 'Auto-filled based on market and category selection'; }
+            if (market && category && challengeData[category] && challengeData[category][market] !== undefined) {
+                var unitCost = challengeData[category][market];
+                document.getElementById('ch_costDisplay').textContent = '$' + unitCost.toFixed(2) + (hourlyCategories.indexOf(category) >= 0 ? ' /hour' : '');
+            } else { document.getElementById('ch_costDisplay').textContent = '/bin/bash.00'; }
+            calculateChallenge();
+        }
+
+        function calculateChallenge() {
+            var market = document.getElementById('ch_market').value;
+            var category = document.getElementById('ch_category').value;
+            var roiPercent = parseFloat(document.getElementById('customROI_ch').value) || 0;
+            var hours = parseFloat(document.getElementById('ch_hours').value) || 1;
+            if (!market || !category || !challengeData[category] || challengeData[category][market] === undefined) {
+                document.getElementById('ch_totalCost').textContent = '/bin/bash.00';
+                document.getElementById('ch_pointsToGive').innerHTML = '0<span class="unit">pts</span>';
+                document.getElementById('ch_dollarValue').textContent = '/bin/bash.00';
+                document.getElementById('ch_summary').textContent = 'Select a market and category to see results.';
+                return;
+            }
+            var unitCost = challengeData[category][market];
+            var totalCost = hourlyCategories.indexOf(category) >= 0 ? unitCost * hours : unitCost;
+            var roiMultiplier = 1 + (roiPercent / 100);
+            var pointsToGive = totalCost / (roiMultiplier * POINT_VALUE);
+            var dollarValue = pointsToGive * POINT_VALUE;
+            document.getElementById('ch_totalCost').textContent = '$' + totalCost.toFixed(2);
+            document.getElementById('ch_costBreakdown').textContent = hourlyCategories.indexOf(category) >= 0 ? '$' + unitCost.toFixed(2) + ' x ' + hours + ' hours' : 'Fixed cost for ' + category;
+            document.getElementById('ch_pointsToGive').innerHTML = formatNumber(Math.round(pointsToGive)) + '<span class="unit">pts</span>';
+            document.getElementById('ch_pointsBreakdown').textContent = '$' + totalCost.toFixed(2) + ' / (' + roiMultiplier + ' x /bin/bash.05)';
+            document.getElementById('ch_dollarValue').textContent = '$' + dollarValue.toFixed(2);
+            document.getElementById('ch_dollarBreakdown').textContent = formatNumber(Math.round(pointsToGive)) + ' pts x /bin/bash.05 per point';
+            var hourText = hourlyCategories.indexOf(category) >= 0 ? ' (' + hours + ' hour' + (hours > 1 ? 's' : '') + ')' : '';
+            document.getElementById('ch_summary').innerHTML = 'Award <strong>' + formatNumber(Math.round(pointsToGive)) + ' points</strong> ($' + dollarValue.toFixed(2) + ') for <strong>' + category + '</strong> in <strong>' + market + '</strong>' + hourText + ' to achieve <strong>' + roiPercent + '% ROI</strong>.';
+        }
+
+        function calculateRewards() {
+            var rewardType = document.getElementById('rw_type').value;
+            var rewardValue = parseFloat(document.getElementById('rw_value').value) || 0;
+            var roiPercent = parseFloat(document.getElementById('customROI_rw').value) || 0;
+            var bknValue = parseFloat(document.getElementById('rw_bknValue').value) || 0;
+            var pointVal = (rewardType === 'Free Credit Activities') ? 0.055 : 0.05;
+            var needsBkns = rewardValue >= 300;
+
+            document.getElementById('rw_bknGroup').style.display = needsBkns ? 'block' : 'none';
+            document.getElementById('rw_bknsResult').style.display = needsBkns ? 'block' : 'none';
+            document.getElementById('rw_totalResult').style.display = needsBkns ? 'block' : 'none';
+            // Show bonus group only in model 2 AND when BKNs needed
+            if (currentModel === 2) {
+                document.getElementById('rw_bonusGroup').style.display = needsBkns ? 'block' : 'none';
+                document.getElementById('rw_bonusGroup').classList.toggle('visible', needsBkns);
+            }
+
+            var roiMultiplier = 1 + (roiPercent / 100);
+            var requiredRevenue = rewardValue * roiMultiplier;
+
+            document.getElementById('rw_revenue').textContent = '$' + formatNumber(Math.round(requiredRevenue));
+            document.getElementById('rw_revenueBreakdown').textContent = '$' + formatNumber(rewardValue) + ' x ' + roiMultiplier + ' = $' + formatNumber(Math.round(requiredRevenue));
+
+            if (needsBkns) {
+                if (currentModel === 1) {
+                    // ===== MODEL 1 (ORIGINAL) =====
+                    var revenueFromBKNs = requiredRevenue * 0.75;
+                    var revenueFromPoints = requiredRevenue * 0.25;
+                    var bknsNeeded = bknValue > 0 ? revenueFromBKNs / bknValue : 0;
+                    var pointsNeeded = revenueFromPoints / pointVal;
+                    var bonusPoints = Math.ceil(bknsNeeded) * BONUS_POINTS_PER_BKN;
+                    var totalPoints = pointsNeeded + bonusPoints;
+
+                    var bknsDisplay = bknsNeeded % 1 === 0 ? bknsNeeded : bknsNeeded.toFixed(2);
+                    document.getElementById('rw_bkns').innerHTML = bknsDisplay + '<span class="unit">BKNs</span>';
+                    document.getElementById('rw_bknsBreakdown').textContent = '75% of $' + formatNumber(Math.round(requiredRevenue)) + ' / $' + formatNumber(bknValue) + ' per BKN';
+                    document.getElementById('rw_points').innerHTML = formatNumber(Math.round(pointsNeeded)) + '<span class="unit">pts</span>';
+                    document.getElementById('rw_pointsBreakdown').textContent = '25% of $' + formatNumber(Math.round(requiredRevenue)) + ' / $' + pointVal + ' per point';
+                    document.getElementById('rw_totalPoints').innerHTML = formatNumber(Math.round(totalPoints)) + '<span class="unit">pts</span>';
+                    document.getElementById('rw_totalBreakdown').textContent = formatNumber(Math.round(pointsNeeded)) + ' + (' + Math.ceil(bknsNeeded) + ' BKNs x 1,000 bonus pts)';
+                    document.getElementById('rw_summary').innerHTML = 'For <strong>' + (rewardType || 'this reward') + '</strong> ($' + formatNumber(rewardValue) + '): ask for <strong>' + bknsDisplay + ' BKNs</strong> and <strong>' + formatNumber(Math.round(totalPoints)) + ' points</strong> to achieve <strong>' + roiPercent + '% ROI</strong>.';
+                } else {
+                    // ===== MODEL 2 (NEW) =====
+                    var bonusPerBkn = parseFloat(document.getElementById('rw_bonusPerBkn').value) || 0;
+                    var bonusDollarValue = bonusPerBkn * pointVal;
+                    var adjustedBknValue = bknValue + bonusDollarValue;
+                    var bknPortion = requiredRevenue * 0.75;
+                    var rawBkns = adjustedBknValue > 0 ? bknPortion / adjustedBknValue : 0;
+                    var bknsNeeded = customRound(rawBkns);
+                    var actualValueCovered = bknsNeeded * adjustedBknValue;
+                    var remainingRevenue = Math.max(0, requiredRevenue - actualValueCovered);
+                    var pointsNeeded = remainingRevenue / pointVal;
+                    var bonusPointsTotal = bknsNeeded * bonusPerBkn;
+                    var totalPoints = pointsNeeded + bonusPointsTotal;
+
+                    document.getElementById('rw_bkns').innerHTML = bknsNeeded + '<span class="unit">BKNs</span>';
+                    document.getElementById('rw_bknsBreakdown').textContent = '75% of $' + formatNumber(Math.round(requiredRevenue)) + ' / $' + formatNumber(adjustedBknValue) + ' adjusted value (raw: ' + rawBkns.toFixed(2) + ')';
+                    document.getElementById('rw_points').innerHTML = formatNumber(Math.round(pointsNeeded)) + '<span class="unit">pts</span>';
+                    document.getElementById('rw_pointsBreakdown').textContent = 'Remaining: $' + formatNumber(Math.round(requiredRevenue)) + ' - $' + formatNumber(Math.round(actualValueCovered)) + ' = $' + formatNumber(Math.round(remainingRevenue)) + ' / $' + pointVal;
+                    document.getElementById('rw_totalPoints').innerHTML = formatNumber(Math.round(totalPoints)) + '<span class="unit">pts</span>';
+                    document.getElementById('rw_totalBreakdown').textContent = formatNumber(Math.round(pointsNeeded)) + ' + (' + bknsNeeded + ' BKNs x ' + formatNumber(bonusPerBkn) + ' bonus pts)';
+                    document.getElementById('rw_summary').innerHTML = 'For <strong>' + (rewardType || 'this reward') + '</strong> ($' + formatNumber(rewardValue) + '): ask for <strong>' + bknsNeeded + ' BKNs</strong> and <strong>' + formatNumber(Math.round(totalPoints)) + ' points</strong> to achieve <strong>' + roiPercent + '% ROI</strong>.<br><small style="color:#5AABEE;">Adjusted BKN value: $' + formatNumber(bknValue) + ' + $' + bonusDollarValue.toFixed(2) + ' bonus = $' + formatNumber(adjustedBknValue) + '</small>';
+                }
+            } else {
+                var pointsNeeded = requiredRevenue / pointVal;
+                document.getElementById('rw_points').innerHTML = formatNumber(Math.round(pointsNeeded)) + '<span class="unit">pts</span>';
+                document.getElementById('rw_pointsBreakdown').textContent = '$' + formatNumber(Math.round(requiredRevenue)) + ' / $' + pointVal + ' per point';
+                document.getElementById('rw_summary').innerHTML = 'For <strong>' + (rewardType || 'this reward') + '</strong> ($' + formatNumber(rewardValue) + '): ask for <strong>' + formatNumber(Math.round(pointsNeeded)) + ' points</strong> to achieve <strong>' + roiPercent + '% ROI</strong>.';
+            }
+        }
+
+        function updateFormulas() {
+            var fwEl = document.getElementById('fw_formulas');
+            var rwEl = document.getElementById('rw_formulas');
+            if (currentModel === 1) {
+                fwEl.innerHTML = '<code>Required Revenue = Cost x (1 + ROI%)</code><code>BKNs Needed = (Revenue x 75%) / BKN Value</code><code>Points Needed = (Revenue x 25%) / /bin/bash.055</code><code>Total Points = Points Needed + (BKNs Needed x 1,000)</code>';
+                rwEl.innerHTML = '<code>Required Revenue = Reward Value x (1 + ROI%)</code><code>If value &lt; 00: Points Needed = Revenue / point value</code><code>If value &gt;= 00: BKNs = (Revenue x 75%) / BKN Value</code><code>If value &gt;= 00: Points = (Revenue x 25%) / point value</code><code>Point value = /bin/bash.05 (or /bin/bash.055 for Free Credit Activities)</code>';
+            } else {
+                fwEl.innerHTML = '<code>Required Revenue = Cost x (1 + ROI%)</code><code>Adjusted BKN Value = BKN Value + (Bonus Pts x /bin/bash.055)</code><code>BKNs Needed = (Revenue x 75%) / Adjusted BKN Value</code><code>Rounding: &gt;= 0.6 rounds UP, &lt; 0.6 rounds DOWN</code><code>Remaining Revenue = Required Revenue - (BKNs x Adjusted Value)</code><code>Points Needed = Remaining Revenue / /bin/bash.055</code><code>Total Points = Points Needed + (BKNs x Bonus Pts per BKN)</code>';
+                rwEl.innerHTML = '<code>Required Revenue = Reward Value x (1 + ROI%)</code><code>If value &lt; 00: Points Needed = Revenue / point value</code><code>If value &gt;= 00:</code><code>&nbsp;&nbsp;Adjusted BKN Value = BKN Value + (Bonus Pts x point value)</code><code>&nbsp;&nbsp;BKNs Needed = (Revenue x 75%) / Adjusted BKN Value</code><code>&nbsp;&nbsp;Rounding: &gt;= 0.6 rounds UP, &lt; 0.6 rounds DOWN</code><code>&nbsp;&nbsp;Remaining = Revenue - (BKNs x Adjusted Value)</code><code>&nbsp;&nbsp;Points Needed = Remaining / point value</code><code>&nbsp;&nbsp;Total = Points + (BKNs x Bonus per BKN)</code>';
+            }
+        }
+
+        document.getElementById('weekCost').addEventListener('input', calculateFreeWeeks);
+        document.getElementById('bknValue').addEventListener('input', calculateFreeWeeks);
+        document.getElementById('customROI_fw').addEventListener('input', function() { calculateFreeWeeks(); });
+        document.getElementById('customROI_ch').addEventListener('input', function() { calculateChallenge(); });
+        document.getElementById('customROI_rw').addEventListener('input', function() { calculateRewards(); });
+        document.getElementById('ch_hours').addEventListener('input', calculateChallenge);
+
+        populateDropdowns();
+        updateFormulas();
+        calculateFreeWeeks();
+        calculateRewards();
+    </script>
+</body>
+</html>
