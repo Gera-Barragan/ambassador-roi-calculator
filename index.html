@@ -68,9 +68,33 @@
         .hours-group { display: none; }
         .hours-group.visible { display: block; }
         .cost-display { background: #F0F7FF; border: 2px solid #D4EDFC; border-radius: 10px; padding: 12px 16px; font-size: 16px; color: #1B3A5C; font-weight: 600; }
+        .model-switch-btn {
+            position: fixed; bottom: 24px; right: 24px; padding: 12px 24px;
+            border: 2px solid #E8ECF0; border-radius: 12px; font-size: 13px;
+            font-weight: 600; cursor: pointer; transition: all 0.3s;
+            background: #FFFFFF; color: #4A5D6F;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1); z-index: 1000;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .model-switch-btn:hover { border-color: #D50072; background: #FFF5F9; box-shadow: 0 6px 20px rgba(213,0,114,0.15); }
+        .model-switch-btn.model2-active { border-color: #5AABEE; background: #F0F7FF; color: #1B3A5C; }
+        .model-switch-btn .dot { width: 8px; height: 8px; border-radius: 50%; background: #8A9BAD; }
+        .model-switch-btn.model2-active .dot { background: #5AABEE; }
+        .model-banner { display: none; background: linear-gradient(90deg, #5AABEE, #1B3A5C); color: white; text-align: center; padding: 8px 16px; font-size: 13px; font-weight: 600; letter-spacing: 0.5px; }
+        .model-banner.visible { display: block; }
+        .bonus-group { display: none; }
+        .bonus-group.visible { display: block; }
+        .model2-indicator { display: none; background: #E8F4FD; border: 1px solid #5AABEE; border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #1B3A5C; font-weight: 600; margin-bottom: 16px; text-align: center; }
+        .model2-indicator.visible { display: block; }
+        .m2-only { display: none; }
+        .m2-only.visible { display: block; }
+        .warning-box { background: #FFF3CD; border: 1px solid #FFECB5; border-radius: 8px; padding: 12px; font-size: 13px; color: #664D03; margin-top: 8px; display: none; }
+        .warning-box.visible { display: block; }
     </style>
 </head>
 <body>
+    <div class="model-banner" id="modelBanner">&#128300; NEW MODEL ACTIVE — Bonus treated as program cost added to reward value</div>
+
     <div class="header">
         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
             <circle cx="50" cy="50" r="46" fill="none" stroke="#003B5C" stroke-width="4"/>
@@ -88,7 +112,6 @@
             <p>Calculate the optimal points and BKNs to achieve your target ROI.</p>
         </div>
 
-        <!-- Tab Navigation -->
         <div class="tab-nav">
             <div class="tab-btn active" onclick="switchTab('freeweeks')">&#127873; Free Weeks</div>
             <div class="tab-btn" onclick="switchTab('challenges')">&#127942; Challenges</div>
@@ -112,6 +135,11 @@
                         <p class="helper">Value of 1 referred booking if it had been paid</p>
                         <p class="helper" style="margin-top: 8px; font-style: italic;">The cost is calculated by getting the average cost per opp per booking from all paid channels</p>
                     </div>
+                    <div class="form-group bonus-group" id="fw_bonusGroup">
+                        <label>Bonus Points per BKN</label>
+                        <input type="number" id="fw_bonusPerBkn" placeholder="1000" value="1000" min="0" step="500" oninput="calculateFreeWeeks()">
+                        <p class="helper">Points automatically awarded per booking — treated as program cost</p>
+                    </div>
                     <div class="form-group">
                         <label>Target ROI</label>
                         <div class="roi-selector">
@@ -129,7 +157,9 @@
                     </div>
                 </div>
                 <div class="card results-card">
+                    <div class="model2-indicator" id="fw_model2tag">&#128300; New Model — Bonus cost included in total investment</div>
                     <div class="card-title"><div class="icon icon-output">&#127919;</div> Results</div>
+                    <div class="result-item m2-only" id="fw_investmentRow"><div class="result-label">Total Investment</div><div class="result-value" id="fw_investment">$0</div><div class="result-breakdown" id="fw_investmentBreakdown"></div></div>
                     <div class="result-item"><div class="result-label">Required Revenue</div><div class="result-value" id="fw_revenue">$1,600</div><div class="result-breakdown" id="fw_revenueBreakdown"></div></div>
                     <div class="results-divider"></div>
                     <div class="result-item"><div class="result-label">BKNs Needed</div><div class="result-value highlight" id="fw_bkns">2<span class="unit">BKNs</span></div><div class="result-breakdown" id="fw_bknsBreakdown"></div></div>
@@ -137,9 +167,10 @@
                     <div class="results-divider"></div>
                     <div class="result-item"><div class="result-label">Total Points Required (with BKN bonus)</div><div class="result-value highlight" id="fw_totalPoints">10,000<span class="unit">pts</span></div><div class="result-breakdown" id="fw_totalBreakdown"></div></div>
                     <div class="result-item" style="background: #F8F0F5; border-radius: 10px; padding: 16px; margin-top: 8px;"><div class="result-label">&#128161; Summary</div><div id="fw_summary" style="font-size: 14px; color: #1B3A5C; line-height: 1.6; margin-top: 8px;"></div></div>
+                    <div class="warning-box" id="fw_warning">&#9888;&#65039; Warning: Bonus cost exceeds what BKNs can cover. The ROI target may not be achievable with these parameters.</div>
                 </div>
             </div>
-            <div class="formula-section"><div class="formula-card"><h3>&#128208; Formula Reference</h3><code>Required Revenue = Cost x (1 + ROI%)</code><code>BKNs Needed = (Revenue x 75%) / BKN Value</code><code>Points Needed = (Revenue x 25%) / $0.055</code><code>Total Points = Points Needed + (BKNs Needed x 1,000)</code></div></div>
+            <div class="formula-section"><div class="formula-card"><h3>&#128208; Formula Reference</h3><div id="fw_formulas"></div></div></div>
         </div>
 
         <!-- CHALLENGES TAB -->
@@ -218,12 +249,16 @@
                         <label>Reward Value</label>
                         <div class="input-prefix"><span>$</span><input type="number" id="rw_value" placeholder="100" value="100" min="0" step="10" oninput="calculateRewards()"></div>
                         <p class="helper">Dollar value of the reward being given</p>
-                        
                     </div>
                     <div class="form-group" id="rw_bknGroup" style="display:none;">
                         <label>Average BKN Value</label>
                         <div class="input-prefix"><span>$</span><input type="number" id="rw_bknValue" placeholder="600" value="600" min="0" step="50" oninput="calculateRewards()"></div>
-                        <p class="helper">Value of 1 referred booking (only needed for rewards 00+)</p>
+                        <p class="helper">Value of 1 referred booking (only needed for rewards $300+)</p>
+                    </div>
+                    <div class="form-group bonus-group" id="rw_bonusGroup">
+                        <label>Bonus Points per BKN</label>
+                        <input type="number" id="rw_bonusPerBkn" placeholder="1000" value="1000" min="0" step="500" oninput="calculateRewards()">
+                        <p class="helper">Points automatically awarded per booking — treated as program cost</p>
                     </div>
                     <div class="form-group">
                         <label>Target ROI</label>
@@ -237,21 +272,29 @@
                     </div>
                 </div>
                 <div class="card results-card">
+                    <div class="model2-indicator" id="rw_model2tag">&#128300; New Model — Bonus cost included in total investment</div>
                     <div class="card-title"><div class="icon icon-output">&#127919;</div> Results</div>
-                    <div class="result-item"><div class="result-label">Required Revenue</div><div class="result-value" id="rw_revenue">00</div><div class="result-breakdown" id="rw_revenueBreakdown">Cost x (1 + ROI%)</div></div>
+                    <div class="result-item m2-only" id="rw_investmentRow"><div class="result-label">Total Investment</div><div class="result-value" id="rw_investment">$0</div><div class="result-breakdown" id="rw_investmentBreakdown"></div></div>
+                    <div class="result-item"><div class="result-label">Required Revenue</div><div class="result-value" id="rw_revenue">$0</div><div class="result-breakdown" id="rw_revenueBreakdown">Cost x (1 + ROI%)</div></div>
                     <div class="results-divider"></div>
                     <div class="result-item" id="rw_bknsResult" style="display:none;"><div class="result-label">BKNs Needed</div><div class="result-value highlight" id="rw_bkns">0<span class="unit">BKNs</span></div><div class="result-breakdown" id="rw_bknsBreakdown"></div></div>
                     <div class="result-item"><div class="result-label">Points Needed</div><div class="result-value" id="rw_points">0<span class="unit">pts</span></div><div class="result-breakdown" id="rw_pointsBreakdown"></div></div>
                     <div class="result-item" id="rw_totalResult" style="display:none;"><div class="result-label">Total Points Required (with BKN bonus)</div><div class="result-value highlight" id="rw_totalPoints">0<span class="unit">pts</span></div><div class="result-breakdown" id="rw_totalBreakdown"></div></div>
                     <div class="results-divider"></div>
                     <div class="result-item" style="background: #F8F0F5; border-radius: 10px; padding: 16px; margin-top: 8px;"><div class="result-label">&#128161; Summary</div><div id="rw_summary" style="font-size: 14px; color: #1B3A5C; line-height: 1.6; margin-top: 8px;">Select a reward type and value to see results.</div></div>
+                    <div class="warning-box" id="rw_warning">&#9888;&#65039; Warning: Bonus cost exceeds what BKNs can cover. The ROI target may not be achievable with these parameters.</div>
                 </div>
             </div>
-            <div class="formula-section"><div class="formula-card"><h3>&#128208; Formula Reference</h3><code>Required Revenue = Reward Value x (1 + ROI%)</code><code>If value &lt; 00: Points Needed = Revenue / point value</code><code>If value &gt;= 00: BKNs = (Revenue x 75%) / BKN Value</code><code>If value &gt;= 00: Points = (Revenue x 25%) / point value</code><code>Point value = /bin/bash.05 (or /bin/bash.055 for Free Credit Activities)</code></div></div>
+            <div class="formula-section"><div class="formula-card"><h3>&#128208; Formula Reference</h3><div id="rw_formulas"></div></div></div>
         </div>
     </div>
 
     <div class="footer"><p>EF Ambassador Program - ROI Calculator | 1 Point = $0.05 USD | 1,000 bonus pts per BKN</p></div>
+
+    <div class="model-switch-btn" id="modelSwitchBtn" onclick="toggleModel()">
+        <span class="dot"></span>
+        <span id="modelSwitchLabel">Switch Model</span>
+    </div>
 
     <script>
         var challengeData = {"Referrals":{"Argentina & Uruguay":3.0,"Austria":23.0,"Belgium (Dutch)":29.0,"Belgium (French) & Luxembourg":30.0,"Brazil":4.0,"Canada (ENG)":29.0,"Canada (French)":11.0,"Chile":9.0,"Colombia":7.0,"Costa Rica":9.0,"Czech Republic":11.0,"Denmark":14.0,"Ecuador":5.0,"Finland":7.0,"France":29.0,"Germany":26.0,"Hong Kong":37.0,"Hungary":8.0,"Indonesia":3.0,"Italy":31.0,"Japan":135.0,"Mexico":10.0,"Netherlands":21.0,"Norway":13.0,"Panama":9.0,"Peru":3.0,"Poland":12.0,"Portugal":6.0,"Romania":21.55,"Saudi Arabia":11.0,"Slovakia":6.0,"South Korea":28.0,"Spain":27.0,"Sweden":19.0,"Switzerland (DE)":52.0,"Switzerland (FR)":41.0,"Switzerland (IT)":26.0,"Taiwan":34.0,"Turkey":8.0,"USA":22.0,"Venezuela":9.0,"Vietnam":17.0},"Testimonial Video":{"Argentina & Uruguay":9.0,"Austria":11.25,"Belgium (Dutch)":11.25,"Belgium (French) & Luxembourg":11.25,"Brazil":9.0,"Canada (ENG)":12.75,"Canada (French)":12.75,"Chile":9.0,"Colombia":9.0,"Costa Rica":9.0,"Czech Republic":11.25,"Denmark":11.25,"Ecuador":9.0,"Finland":11.25,"France":11.25,"Germany":11.25,"Hong Kong":7.95,"Hungary":11.25,"Indonesia":7.95,"Italy":11.25,"Japan":7.95,"Mexico":9.0,"Netherlands":11.25,"Norway":11.25,"Panama":9.0,"Peru":9.0,"Poland":11.25,"Portugal":11.25,"Romania":11.25,"Saudi Arabia":7.95,"Slovakia":11.25,"South Korea":7.95,"Spain":11.25,"Sweden":11.25,"Switzerland (DE)":11.25,"Switzerland (FR)":11.25,"Switzerland (IT)":11.25,"Taiwan":7.95,"Turkey":11.25,"USA":12.75,"Venezuela":9.0,"Vietnam":7.95},"Reviews":{"Argentina & Uruguay":4.0,"Austria":8.0,"Belgium (Dutch)":8.0,"Belgium (French) & Luxembourg":8.0,"Brazil":4.0,"Canada (ENG)":10.0,"Canada (French)":10.0,"Chile":4.0,"Colombia":4.0,"Costa Rica":4.0,"Czech Republic":8.0,"Denmark":8.0,"Ecuador":4.0,"Finland":8.0,"France":8.0,"Germany":8.0,"Hong Kong":5.0,"Hungary":8.0,"Indonesia":5.0,"Italy":8.0,"Japan":5.0,"Mexico":4.0,"Netherlands":8.0,"Norway":8.0,"Panama":4.0,"Peru":4.0,"Poland":8.0,"Portugal":8.0,"Romania":8.0,"Saudi Arabia":5.0,"Slovakia":8.0,"South Korea":5.0,"Spain":8.0,"Sweden":8.0,"Switzerland (DE)":8.0,"Switzerland (FR)":8.0,"Switzerland (IT)":8.0,"Taiwan":5.0,"Turkey":8.0,"USA":10.0,"Venezuela":4.0,"Vietnam":5.0},"Sales Support":{"Argentina & Uruguay":3.28,"Austria":16.14,"Belgium (Dutch)":15.05,"Belgium (French) & Luxembourg":15.05,"Brazil":3.23,"Canada (ENG)":13.92,"Canada (French)":13.92,"Chile":5.79,"Colombia":4.58,"Costa Rica":5.99,"Czech Republic":7.38,"Denmark":19.95,"Ecuador":0.5,"Finland":14.4,"France":13.73,"Germany":16.89,"Hong Kong":6.86,"Hungary":7.97,"Indonesia":5.74,"Italy":9.31,"Japan":10.44,"Mexico":3.4,"Netherlands":15.81,"Norway":18.27,"Panama":5.45,"Peru":3.04,"Poland":11.99,"Portugal":9.65,"Romania":10.14,"Saudi Arabia":12.28,"Slovakia":7.37,"South Korea":12.77,"Spain":12.25,"Sweden":15.39,"Switzerland (DE)":21.99,"Switzerland (FR)":21.99,"Switzerland (IT)":21.99,"Taiwan":5.45,"Turkey":10.43,"USA":7.27,"Venezuela":0.92,"Vietnam":4.01},"Events & Fairs":{"Argentina & Uruguay":3.28,"Austria":16.14,"Belgium (Dutch)":15.05,"Belgium (French) & Luxembourg":15.05,"Brazil":3.23,"Canada (ENG)":13.92,"Canada (French)":13.92,"Chile":5.79,"Colombia":4.58,"Costa Rica":5.99,"Czech Republic":7.38,"Denmark":19.95,"Ecuador":0.5,"Finland":14.4,"France":13.73,"Germany":16.89,"Hong Kong":6.86,"Hungary":7.97,"Indonesia":5.74,"Italy":9.31,"Japan":10.44,"Mexico":3.4,"Netherlands":15.81,"Norway":18.27,"Panama":5.45,"Peru":3.04,"Poland":11.99,"Portugal":9.65,"Romania":10.14,"Saudi Arabia":12.28,"Slovakia":7.37,"South Korea":12.77,"Spain":12.25,"Sweden":15.39,"Switzerland (DE)":21.99,"Switzerland (FR)":21.99,"Switzerland (IT)":21.99,"Taiwan":5.45,"Turkey":10.43,"USA":7.27,"Venezuela":0.92,"Vietnam":4.01},"School & Uni connections":{"Argentina & Uruguay":3.28,"Austria":16.14,"Belgium (Dutch)":15.05,"Belgium (French) & Luxembourg":15.05,"Brazil":3.23,"Canada (ENG)":13.92,"Canada (French)":13.92,"Chile":5.79,"Colombia":4.58,"Costa Rica":5.99,"Czech Republic":7.38,"Denmark":19.95,"Ecuador":0.5,"Finland":14.4,"France":13.73,"Germany":16.89,"Hong Kong":6.86,"Hungary":7.97,"Indonesia":5.74,"Italy":9.31,"Japan":10.44,"Mexico":3.4,"Netherlands":15.81,"Norway":18.27,"Panama":5.45,"Peru":3.04,"Poland":11.99,"Portugal":9.65,"Romania":10.14,"Saudi Arabia":12.28,"Slovakia":7.37,"South Korea":12.77,"Spain":12.25,"Sweden":15.39,"Switzerland (DE)":21.99,"Switzerland (FR)":21.99,"Switzerland (IT)":21.99,"Taiwan":5.45,"Turkey":10.43,"USA":7.27,"Venezuela":0.92,"Vietnam":4.01},"SM Content Generation Static":{"Argentina & Uruguay":6.3,"Austria":8.25,"Belgium (Dutch)":8.25,"Belgium (French) & Luxembourg":8.25,"Brazil":6.3,"Canada (ENG)":6.3,"Canada (French)":6.3,"Chile":6.3,"Colombia":6.3,"Costa Rica":6.3,"Czech Republic":8.25,"Denmark":8.25,"Ecuador":6.3,"Finland":8.25,"France":8.25,"Germany":8.25,"Hong Kong":5.25,"Hungary":8.25,"Indonesia":5.25,"Italy":8.25,"Japan":5.25,"Mexico":6.3,"Netherlands":8.25,"Norway":8.25,"Panama":6.3,"Peru":6.3,"Poland":8.25,"Portugal":8.25,"Romania":8.25,"Saudi Arabia":5.25,"Slovakia":8.25,"South Korea":5.25,"Spain":8.25,"Sweden":8.25,"Switzerland (DE)":8.25,"Switzerland (FR)":8.25,"Switzerland (IT)":8.25,"Taiwan":5.25,"Turkey":8.25,"USA":6.3,"Venezuela":6.3,"Vietnam":5.25},"SM Content Generation Video":{"Argentina & Uruguay":9.0,"Austria":11.25,"Belgium (Dutch)":11.25,"Belgium (French) & Luxembourg":11.25,"Brazil":9.0,"Canada (ENG)":9.0,"Canada (French)":9.0,"Chile":9.0,"Colombia":9.0,"Costa Rica":9.0,"Czech Republic":11.25,"Denmark":11.25,"Ecuador":9.0,"Finland":11.25,"France":11.25,"Germany":11.25,"Hong Kong":7.95,"Hungary":11.25,"Indonesia":7.95,"Italy":11.25,"Japan":7.95,"Mexico":9.0,"Netherlands":11.25,"Norway":11.25,"Panama":9.0,"Peru":9.0,"Poland":11.25,"Portugal":11.25,"Romania":11.25,"Saudi Arabia":7.95,"Slovakia":11.25,"South Korea":7.95,"Spain":11.25,"Sweden":11.25,"Switzerland (DE)":11.25,"Switzerland (FR)":11.25,"Switzerland (IT)":11.25,"Taiwan":7.95,"Turkey":11.25,"USA":9.0,"Venezuela":9.0}};
@@ -262,6 +305,45 @@
         var BONUS_POINTS_PER_BKN = 1000;
         var POINTS_PERCENT = 0.25;
         var BKNS_PERCENT = 0.75;
+        var currentModel = 1;
+
+        function toggleModel() {
+            currentModel = currentModel === 1 ? 2 : 1;
+            var btn = document.getElementById('modelSwitchBtn');
+            var label = document.getElementById('modelSwitchLabel');
+            var banner = document.getElementById('modelBanner');
+            var bonusGroups = document.querySelectorAll('.bonus-group');
+            var model2Tags = document.querySelectorAll('.model2-indicator');
+            var m2Rows = document.querySelectorAll('.m2-only');
+
+            if (currentModel === 2) {
+                btn.classList.add('model2-active');
+                label.textContent = 'Switch to Model 1';
+                banner.classList.add('visible');
+                for (var i = 0; i < bonusGroups.length; i++) bonusGroups[i].classList.add('visible');
+                for (var i = 0; i < model2Tags.length; i++) model2Tags[i].classList.add('visible');
+                for (var i = 0; i < m2Rows.length; i++) m2Rows[i].classList.add('visible');
+            } else {
+                btn.classList.remove('model2-active');
+                label.textContent = 'Switch Model';
+                banner.classList.remove('visible');
+                for (var i = 0; i < bonusGroups.length; i++) bonusGroups[i].classList.remove('visible');
+                for (var i = 0; i < model2Tags.length; i++) model2Tags[i].classList.remove('visible');
+                for (var i = 0; i < m2Rows.length; i++) m2Rows[i].classList.remove('visible');
+                document.getElementById('fw_warning').classList.remove('visible');
+                document.getElementById('rw_warning').classList.remove('visible');
+            }
+            updateFormulas();
+            calculateFreeWeeks();
+            calculateChallenge();
+            calculateRewards();
+        }
+
+        function customRound(value) {
+            if (value <= 0) return 0;
+            var decimal = value - Math.floor(value);
+            return decimal >= 0.6 ? Math.ceil(value) : Math.floor(value);
+        }
 
         function switchTab(tab) {
             var btns = document.querySelectorAll('.tab-btn');
@@ -283,28 +365,82 @@
 
         function formatNumber(num) { return num.toLocaleString('en-US'); }
 
+        // Solve for BKNs in Approach B: B = 0.75 * roi * R / (bv - 0.75 * roi * bp * pv)
+        function solveBkns(rewardValue, roiMultiplier, bknValue, bonusPerBkn, pointVal) {
+            var denominator = bknValue - (BKNS_PERCENT * roiMultiplier * bonusPerBkn * pointVal);
+            if (denominator <= 0) return { bkns: -1, error: true }; // impossible
+            var rawBkns = (BKNS_PERCENT * roiMultiplier * rewardValue) / denominator;
+            var roundedBkns = customRound(rawBkns);
+            return { bkns: roundedBkns, raw: rawBkns, error: false };
+        }
+
         function calculateFreeWeeks() {
             var cost = parseFloat(document.getElementById('weekCost').value) || 0;
             var bknValue = parseFloat(document.getElementById('bknValue').value) || 0;
             var roiPercent = parseFloat(document.getElementById('customROI_fw').value) || 0;
             var roiMultiplier = 1 + (roiPercent / 100);
-            var requiredRevenue = cost * roiMultiplier;
-            var revenueFromBKNs = requiredRevenue * BKNS_PERCENT;
-            var revenueFromPoints = requiredRevenue * POINTS_PERCENT;
-            var bknsNeeded = bknValue > 0 ? revenueFromBKNs / bknValue : 0;
-            var pointsNeeded = revenueFromPoints / FW_POINT_VALUE;
-            var bonusPoints = Math.ceil(bknsNeeded) * BONUS_POINTS_PER_BKN;
-            var totalPoints = pointsNeeded + bonusPoints;
-            document.getElementById('fw_revenue').textContent = '$' + formatNumber(Math.round(requiredRevenue));
-            document.getElementById('fw_revenueBreakdown').textContent = 'Cost x (1 + ' + roiPercent + '%) = $' + formatNumber(cost) + ' x ' + roiMultiplier;
-            var bknsDisplay = bknsNeeded % 1 === 0 ? bknsNeeded : bknsNeeded.toFixed(2);
-            document.getElementById('fw_bkns').innerHTML = bknsDisplay + '<span class="unit">BKNs</span>';
-            document.getElementById('fw_bknsBreakdown').textContent = '75% of $' + formatNumber(Math.round(requiredRevenue)) + ' / $' + formatNumber(bknValue) + ' per BKN';
-            document.getElementById('fw_points').innerHTML = formatNumber(Math.round(pointsNeeded)) + '<span class="unit">pts</span>';
-            document.getElementById('fw_pointsBreakdown').textContent = '25% of $' + formatNumber(Math.round(requiredRevenue)) + ' / $' + FW_POINT_VALUE + ' per point';
-            document.getElementById('fw_totalPoints').innerHTML = formatNumber(Math.round(totalPoints)) + '<span class="unit">pts</span>';
-            document.getElementById('fw_totalBreakdown').textContent = formatNumber(Math.round(pointsNeeded)) + ' + (' + Math.ceil(bknsNeeded) + ' BKNs x ' + formatNumber(BONUS_POINTS_PER_BKN) + ' bonus pts)';
-            document.getElementById('fw_summary').innerHTML = 'Ask ambassadors for <strong>' + bknsDisplay + ' BKNs</strong> and <strong>' + formatNumber(Math.round(totalPoints)) + ' points</strong> to achieve a <strong>' + roiPercent + '% ROI</strong> on the Free Week reward.';
+            document.getElementById('fw_warning').classList.remove('visible');
+
+            if (currentModel === 1) {
+                var requiredRevenue = cost * roiMultiplier;
+                var revenueFromBKNs = requiredRevenue * BKNS_PERCENT;
+                var revenueFromPoints = requiredRevenue * POINTS_PERCENT;
+                var bknsNeeded = bknValue > 0 ? revenueFromBKNs / bknValue : 0;
+                var pointsNeeded = revenueFromPoints / FW_POINT_VALUE;
+                var bonusPoints = Math.ceil(bknsNeeded) * BONUS_POINTS_PER_BKN;
+                var totalPoints = pointsNeeded + bonusPoints;
+
+                document.getElementById('fw_revenue').textContent = '$' + formatNumber(Math.round(requiredRevenue));
+                document.getElementById('fw_revenueBreakdown').textContent = 'Cost x (1 + ' + roiPercent + '%) = $' + formatNumber(cost) + ' x ' + roiMultiplier;
+                var bknsDisplay = bknsNeeded % 1 === 0 ? bknsNeeded : bknsNeeded.toFixed(2);
+                document.getElementById('fw_bkns').innerHTML = bknsDisplay + '<span class="unit">BKNs</span>';
+                document.getElementById('fw_bknsBreakdown').textContent = '75% of $' + formatNumber(Math.round(requiredRevenue)) + ' / $' + formatNumber(bknValue) + ' per BKN';
+                document.getElementById('fw_points').innerHTML = formatNumber(Math.round(pointsNeeded)) + '<span class="unit">pts</span>';
+                document.getElementById('fw_pointsBreakdown').textContent = '25% of $' + formatNumber(Math.round(requiredRevenue)) + ' / $' + FW_POINT_VALUE + ' per point';
+                document.getElementById('fw_totalPoints').innerHTML = formatNumber(Math.round(totalPoints)) + '<span class="unit">pts</span>';
+                document.getElementById('fw_totalBreakdown').textContent = formatNumber(Math.round(pointsNeeded)) + ' + (' + Math.ceil(bknsNeeded) + ' BKNs x ' + formatNumber(BONUS_POINTS_PER_BKN) + ' bonus pts)';
+                document.getElementById('fw_summary').innerHTML = 'Ask ambassadors for <strong>' + bknsDisplay + ' BKNs</strong> and <strong>' + formatNumber(Math.round(totalPoints)) + ' points</strong> to achieve a <strong>' + roiPercent + '% ROI</strong> on the Free Week reward.';
+            } else {
+                var bonusPerBkn = parseFloat(document.getElementById('fw_bonusPerBkn').value) || 0;
+                var bonusCostPerBkn = bonusPerBkn * FW_POINT_VALUE;
+                var result = solveBkns(cost, roiMultiplier, bknValue, bonusPerBkn, FW_POINT_VALUE);
+
+                if (result.error) {
+                    document.getElementById('fw_warning').classList.add('visible');
+                    document.getElementById('fw_investment').textContent = '—';
+                    document.getElementById('fw_investmentBreakdown').textContent = '';
+                    document.getElementById('fw_revenue').textContent = '—';
+                    document.getElementById('fw_revenueBreakdown').textContent = 'Cannot calculate: bonus cost too high relative to BKN value';
+                    document.getElementById('fw_bkns').innerHTML = '—';
+                    document.getElementById('fw_bknsBreakdown').textContent = '';
+                    document.getElementById('fw_points').innerHTML = '—';
+                    document.getElementById('fw_pointsBreakdown').textContent = '';
+                    document.getElementById('fw_totalPoints').innerHTML = '—';
+                    document.getElementById('fw_totalBreakdown').textContent = '';
+                    document.getElementById('fw_summary').innerHTML = '<span style="color:#D50072;">Cannot calculate — the bonus cost per BKN exceeds what the BKN generates in revenue.</span>';
+                    return;
+                }
+
+                var bknsNeeded = result.bkns;
+                var totalInvestment = cost + (bknsNeeded * bonusCostPerBkn);
+                var requiredRevenue = totalInvestment * roiMultiplier;
+                var pointsPortion = requiredRevenue * POINTS_PERCENT;
+                var pointsNeeded = pointsPortion / FW_POINT_VALUE;
+                var bonusPointsTotal = bknsNeeded * bonusPerBkn;
+                var totalPoints = pointsNeeded + bonusPointsTotal;
+
+                document.getElementById('fw_investment').textContent = '$' + formatNumber(Math.round(totalInvestment));
+                document.getElementById('fw_investmentBreakdown').textContent = 'Reward $' + formatNumber(cost) + ' + (' + bknsNeeded + ' BKNs x $' + bonusCostPerBkn.toFixed(2) + ' bonus cost)';
+                document.getElementById('fw_revenue').textContent = '$' + formatNumber(Math.round(requiredRevenue));
+                document.getElementById('fw_revenueBreakdown').textContent = 'Total Investment $' + formatNumber(Math.round(totalInvestment)) + ' x ' + roiMultiplier;
+                document.getElementById('fw_bkns').innerHTML = bknsNeeded + '<span class="unit">BKNs</span>';
+                document.getElementById('fw_bknsBreakdown').textContent = 'Solved: raw ' + result.raw.toFixed(2) + ' BKNs (rounded with 0.6 rule)';
+                document.getElementById('fw_points').innerHTML = formatNumber(Math.round(pointsNeeded)) + '<span class="unit">pts</span>';
+                document.getElementById('fw_pointsBreakdown').textContent = '25% of $' + formatNumber(Math.round(requiredRevenue)) + ' / $' + FW_POINT_VALUE + ' per point';
+                document.getElementById('fw_totalPoints').innerHTML = formatNumber(Math.round(totalPoints)) + '<span class="unit">pts</span>';
+                document.getElementById('fw_totalBreakdown').textContent = formatNumber(Math.round(pointsNeeded)) + ' + (' + bknsNeeded + ' BKNs x ' + formatNumber(bonusPerBkn) + ' bonus pts)';
+                document.getElementById('fw_summary').innerHTML = 'Ask ambassadors for <strong>' + bknsNeeded + ' BKNs</strong> and <strong>' + formatNumber(Math.round(totalPoints)) + ' points</strong> to achieve a <strong>' + roiPercent + '% ROI</strong>.<br><small style="color:#5AABEE;">Total investment: $' + formatNumber(cost) + ' reward + $' + formatNumber(Math.round(bknsNeeded * bonusCostPerBkn)) + ' bonus cost = $' + formatNumber(Math.round(totalInvestment)) + '</small>';
+            }
         }
 
         function populateDropdowns() {
@@ -356,54 +492,105 @@
             document.getElementById('ch_summary').innerHTML = 'Award <strong>' + formatNumber(Math.round(pointsToGive)) + ' points</strong> ($' + dollarValue.toFixed(2) + ') for <strong>' + category + '</strong> in <strong>' + market + '</strong>' + hourText + ' to achieve <strong>' + roiPercent + '% ROI</strong>.';
         }
 
-
         function calculateRewards() {
             var rewardType = document.getElementById('rw_type').value;
             var rewardValue = parseFloat(document.getElementById('rw_value').value) || 0;
             var roiPercent = parseFloat(document.getElementById('customROI_rw').value) || 0;
             var bknValue = parseFloat(document.getElementById('rw_bknValue').value) || 0;
-            
-            // Determine point value based on reward type
             var pointVal = (rewardType === 'Free Credit Activities') ? 0.055 : 0.05;
-            
-            // Determine if BKNs are needed (reward >= 00)
             var needsBkns = rewardValue >= 300;
-            
-            // Show/hide BKN input and results
+            var roiMultiplier = 1 + (roiPercent / 100);
+
             document.getElementById('rw_bknGroup').style.display = needsBkns ? 'block' : 'none';
             document.getElementById('rw_bknsResult').style.display = needsBkns ? 'block' : 'none';
             document.getElementById('rw_totalResult').style.display = needsBkns ? 'block' : 'none';
-            
-            // Calculate
-            var roiMultiplier = 1 + (roiPercent / 100);
-            var requiredRevenue = rewardValue * roiMultiplier;
-            
-            document.getElementById('rw_revenue').textContent = '$' + formatNumber(Math.round(requiredRevenue));
-            document.getElementById('rw_revenueBreakdown').textContent = '$' + formatNumber(rewardValue) + ' x ' + roiMultiplier + ' = $' + formatNumber(Math.round(requiredRevenue));
-            
+            document.getElementById('rw_warning').classList.remove('visible');
+            if (currentModel === 2) {
+                document.getElementById('rw_bonusGroup').style.display = needsBkns ? 'block' : 'none';
+                document.getElementById('rw_bonusGroup').classList.toggle('visible', needsBkns);
+            }
+
             if (needsBkns) {
-                // 75% BKNs / 25% Points
-                var revenueFromBKNs = requiredRevenue * 0.75;
-                var revenueFromPoints = requiredRevenue * 0.25;
-                var bknsNeeded = bknValue > 0 ? revenueFromBKNs / bknValue : 0;
-                var pointsNeeded = revenueFromPoints / pointVal;
-                var bonusPoints = Math.ceil(bknsNeeded) * BONUS_POINTS_PER_BKN;
-                var totalPoints = pointsNeeded + bonusPoints;
-                
-                var bknsDisplay = bknsNeeded % 1 === 0 ? bknsNeeded : bknsNeeded.toFixed(2);
-                document.getElementById('rw_bkns').innerHTML = bknsDisplay + '<span class="unit">BKNs</span>';
-                document.getElementById('rw_bknsBreakdown').textContent = '75% of $' + formatNumber(Math.round(requiredRevenue)) + ' / $' + formatNumber(bknValue) + ' per BKN';
-                document.getElementById('rw_points').innerHTML = formatNumber(Math.round(pointsNeeded)) + '<span class="unit">pts</span>';
-                document.getElementById('rw_pointsBreakdown').textContent = '25% of $' + formatNumber(Math.round(requiredRevenue)) + ' / $' + pointVal + ' per point';
-                document.getElementById('rw_totalPoints').innerHTML = formatNumber(Math.round(totalPoints)) + '<span class="unit">pts</span>';
-                document.getElementById('rw_totalBreakdown').textContent = formatNumber(Math.round(pointsNeeded)) + ' + (' + Math.ceil(bknsNeeded) + ' BKNs x 1,000 bonus pts)';
-                document.getElementById('rw_summary').innerHTML = 'For <strong>' + (rewardType || 'this reward') + '</strong> ($' + formatNumber(rewardValue) + '): ask for <strong>' + bknsDisplay + ' BKNs</strong> and <strong>' + formatNumber(Math.round(totalPoints)) + ' points</strong> to achieve <strong>' + roiPercent + '% ROI</strong>.';
+                if (currentModel === 1) {
+                    var requiredRevenue = rewardValue * roiMultiplier;
+                    var revenueFromBKNs = requiredRevenue * 0.75;
+                    var revenueFromPoints = requiredRevenue * 0.25;
+                    var bknsNeeded = bknValue > 0 ? revenueFromBKNs / bknValue : 0;
+                    var pointsNeeded = revenueFromPoints / pointVal;
+                    var bonusPoints = Math.ceil(bknsNeeded) * BONUS_POINTS_PER_BKN;
+                    var totalPoints = pointsNeeded + bonusPoints;
+                    var bknsDisplay = bknsNeeded % 1 === 0 ? bknsNeeded : bknsNeeded.toFixed(2);
+
+                    document.getElementById('rw_revenue').textContent = '$' + formatNumber(Math.round(requiredRevenue));
+                    document.getElementById('rw_revenueBreakdown').textContent = '$' + formatNumber(rewardValue) + ' x ' + roiMultiplier + ' = $' + formatNumber(Math.round(requiredRevenue));
+                    document.getElementById('rw_bkns').innerHTML = bknsDisplay + '<span class="unit">BKNs</span>';
+                    document.getElementById('rw_bknsBreakdown').textContent = '75% of $' + formatNumber(Math.round(requiredRevenue)) + ' / $' + formatNumber(bknValue) + ' per BKN';
+                    document.getElementById('rw_points').innerHTML = formatNumber(Math.round(pointsNeeded)) + '<span class="unit">pts</span>';
+                    document.getElementById('rw_pointsBreakdown').textContent = '25% of $' + formatNumber(Math.round(requiredRevenue)) + ' / $' + pointVal + ' per point';
+                    document.getElementById('rw_totalPoints').innerHTML = formatNumber(Math.round(totalPoints)) + '<span class="unit">pts</span>';
+                    document.getElementById('rw_totalBreakdown').textContent = formatNumber(Math.round(pointsNeeded)) + ' + (' + Math.ceil(bknsNeeded) + ' BKNs x 1,000 bonus pts)';
+                    document.getElementById('rw_summary').innerHTML = 'For <strong>' + (rewardType || 'this reward') + '</strong> ($' + formatNumber(rewardValue) + '): ask for <strong>' + bknsDisplay + ' BKNs</strong> and <strong>' + formatNumber(Math.round(totalPoints)) + ' points</strong> to achieve <strong>' + roiPercent + '% ROI</strong>.';
+                } else {
+                    var bonusPerBkn = parseFloat(document.getElementById('rw_bonusPerBkn').value) || 0;
+                    var bonusCostPerBkn = bonusPerBkn * pointVal;
+                    var result = solveBkns(rewardValue, roiMultiplier, bknValue, bonusPerBkn, pointVal);
+
+                    if (result.error) {
+                        document.getElementById('rw_warning').classList.add('visible');
+                        document.getElementById('rw_investment').textContent = '—';
+                        document.getElementById('rw_investmentBreakdown').textContent = '';
+                        document.getElementById('rw_revenue').textContent = '—';
+                        document.getElementById('rw_revenueBreakdown').textContent = 'Cannot calculate: bonus cost too high';
+                        document.getElementById('rw_bkns').innerHTML = '—';
+                        document.getElementById('rw_bknsBreakdown').textContent = '';
+                        document.getElementById('rw_points').innerHTML = '—';
+                        document.getElementById('rw_pointsBreakdown').textContent = '';
+                        document.getElementById('rw_totalPoints').innerHTML = '—';
+                        document.getElementById('rw_totalBreakdown').textContent = '';
+                        document.getElementById('rw_summary').innerHTML = '<span style="color:#D50072;">Cannot calculate — the bonus cost per BKN exceeds what the BKN generates.</span>';
+                        return;
+                    }
+
+                    var bknsNeeded = result.bkns;
+                    var totalInvestment = rewardValue + (bknsNeeded * bonusCostPerBkn);
+                    var requiredRevenue = totalInvestment * roiMultiplier;
+                    var pointsPortion = requiredRevenue * 0.25;
+                    var pointsNeeded = pointsPortion / pointVal;
+                    var bonusPointsTotal = bknsNeeded * bonusPerBkn;
+                    var totalPoints = pointsNeeded + bonusPointsTotal;
+
+                    document.getElementById('rw_investment').textContent = '$' + formatNumber(Math.round(totalInvestment));
+                    document.getElementById('rw_investmentBreakdown').textContent = 'Reward $' + formatNumber(rewardValue) + ' + (' + bknsNeeded + ' BKNs x $' + bonusCostPerBkn.toFixed(2) + ' bonus cost)';
+                    document.getElementById('rw_revenue').textContent = '$' + formatNumber(Math.round(requiredRevenue));
+                    document.getElementById('rw_revenueBreakdown').textContent = 'Total Investment $' + formatNumber(Math.round(totalInvestment)) + ' x ' + roiMultiplier;
+                    document.getElementById('rw_bkns').innerHTML = bknsNeeded + '<span class="unit">BKNs</span>';
+                    document.getElementById('rw_bknsBreakdown').textContent = 'Solved: raw ' + result.raw.toFixed(2) + ' BKNs (rounded with 0.6 rule)';
+                    document.getElementById('rw_points').innerHTML = formatNumber(Math.round(pointsNeeded)) + '<span class="unit">pts</span>';
+                    document.getElementById('rw_pointsBreakdown').textContent = '25% of $' + formatNumber(Math.round(requiredRevenue)) + ' / $' + pointVal + ' per point';
+                    document.getElementById('rw_totalPoints').innerHTML = formatNumber(Math.round(totalPoints)) + '<span class="unit">pts</span>';
+                    document.getElementById('rw_totalBreakdown').textContent = formatNumber(Math.round(pointsNeeded)) + ' + (' + bknsNeeded + ' BKNs x ' + formatNumber(bonusPerBkn) + ' bonus pts)';
+                    document.getElementById('rw_summary').innerHTML = 'For <strong>' + (rewardType || 'this reward') + '</strong> ($' + formatNumber(rewardValue) + '): ask for <strong>' + bknsNeeded + ' BKNs</strong> and <strong>' + formatNumber(Math.round(totalPoints)) + ' points</strong> to achieve <strong>' + roiPercent + '% ROI</strong>.<br><small style="color:#5AABEE;">Total investment: $' + formatNumber(rewardValue) + ' reward + $' + formatNumber(Math.round(bknsNeeded * bonusCostPerBkn)) + ' bonus cost = $' + formatNumber(Math.round(totalInvestment)) + '</small>';
+                }
             } else {
-                // Points only
+                var requiredRevenue = rewardValue * roiMultiplier;
+                document.getElementById('rw_revenue').textContent = '$' + formatNumber(Math.round(requiredRevenue));
+                document.getElementById('rw_revenueBreakdown').textContent = '$' + formatNumber(rewardValue) + ' x ' + roiMultiplier + ' = $' + formatNumber(Math.round(requiredRevenue));
                 var pointsNeeded = requiredRevenue / pointVal;
                 document.getElementById('rw_points').innerHTML = formatNumber(Math.round(pointsNeeded)) + '<span class="unit">pts</span>';
                 document.getElementById('rw_pointsBreakdown').textContent = '$' + formatNumber(Math.round(requiredRevenue)) + ' / $' + pointVal + ' per point';
                 document.getElementById('rw_summary').innerHTML = 'For <strong>' + (rewardType || 'this reward') + '</strong> ($' + formatNumber(rewardValue) + '): ask for <strong>' + formatNumber(Math.round(pointsNeeded)) + ' points</strong> to achieve <strong>' + roiPercent + '% ROI</strong>.';
+            }
+        }
+
+        function updateFormulas() {
+            var fwEl = document.getElementById('fw_formulas');
+            var rwEl = document.getElementById('rw_formulas');
+            if (currentModel === 1) {
+                fwEl.innerHTML = '<code>Required Revenue = Cost x (1 + ROI%)</code><code>BKNs Needed = (Revenue x 75%) / BKN Value</code><code>Points Needed = (Revenue x 25%) / $0.055</code><code>Total Points = Points Needed + (BKNs Needed x 1,000)</code>';
+                rwEl.innerHTML = '<code>Required Revenue = Reward Value x (1 + ROI%)</code><code>If value &lt; $300: Points Needed = Revenue / point value</code><code>If value &gt;= $300: BKNs = (Revenue x 75%) / BKN Value</code><code>If value &gt;= $300: Points = (Revenue x 25%) / point value</code><code>Point value = $0.05 (or $0.055 for Free Credit Activities)</code>';
+            } else {
+                fwEl.innerHTML = '<code>Bonus Cost per BKN = Bonus Points x $0.055</code><code>BKNs = 0.75 x ROI Multiplier x Cost / (BKN Value - 0.75 x ROI Multiplier x Bonus Cost)</code><code>Rounding: &gt;= 0.6 rounds UP, &lt; 0.6 rounds DOWN</code><code>Total Investment = Cost + (BKNs x Bonus Cost per BKN)</code><code>Required Revenue = Total Investment x (1 + ROI%)</code><code>Points Needed = (Revenue x 25%) / $0.055</code><code>Total Points = Points Needed + (BKNs x Bonus Points per BKN)</code>';
+                rwEl.innerHTML = '<code>Bonus Cost per BKN = Bonus Points x point value</code><code>If value &lt; $300: Points Needed = Revenue / point value</code><code>If value &gt;= $300:</code><code>&nbsp;&nbsp;BKNs = 0.75 x ROI x Reward / (BKN Value - 0.75 x ROI x Bonus Cost)</code><code>&nbsp;&nbsp;Rounding: &gt;= 0.6 rounds UP, &lt; 0.6 rounds DOWN</code><code>&nbsp;&nbsp;Total Investment = Reward + (BKNs x Bonus Cost)</code><code>&nbsp;&nbsp;Revenue = Total Investment x (1 + ROI%)</code><code>&nbsp;&nbsp;Points = (Revenue x 25%) / point value</code><code>&nbsp;&nbsp;Total = Points + (BKNs x Bonus per BKN)</code>';
             }
         }
 
@@ -415,6 +602,7 @@
         document.getElementById('ch_hours').addEventListener('input', calculateChallenge);
 
         populateDropdowns();
+        updateFormulas();
         calculateFreeWeeks();
         calculateRewards();
     </script>
