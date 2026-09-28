@@ -78,6 +78,18 @@
         }
         .model-switch-btn:hover { color: #8A9BAD; border-color: #B0B8C0; }
         .model-switch-btn .dot { width: 5px; height: 5px; border-radius: 50%; background: #D0D8E0; }
+
+        /* Model 3 elements */
+        .m3-market-group { display: none; margin-bottom: 20px; }
+        .m3-market-group.visible { display: block; }
+        .m3-market-group label { display: block; font-size: 13px; font-weight: 600; color: #4A5D6F; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px; }
+        .m3-market-group .helper { font-size: 12px; color: #8A9BAD; margin-top: 4px; font-weight: 400; text-transform: none; letter-spacing: 0; }
+        .m3-market-group select { width: 100%; padding: 12px 16px; border: 2px solid #E8ECF0; border-radius: 10px; font-size: 16px; color: #1B3A5C; transition: border-color 0.2s, box-shadow 0.2s; background: #FAFBFC; }
+        .m3-market-group select:focus { outline: none; border-color: #D50072; box-shadow: 0 0 0 3px rgba(213, 0, 114, 0.1); background: #FFFFFF; }
+        .m3-bkn-display { background: #F0F7FF; border: 2px solid #D4EDFC; border-radius: 10px; padding: 12px 16px; font-size: 16px; color: #1B3A5C; font-weight: 600; }
+        .m3-roi-fixed { background: #F0F7FF; border: 2px solid #D4EDFC; border-radius: 10px; padding: 12px 16px; font-size: 16px; color: #1B3A5C; font-weight: 600; }
+        .m3-roi-group { display: none; margin-bottom: 20px; }
+        .m3-roi-group.visible { display: block; }
     </style>
 </head>
 <body>
@@ -115,6 +127,21 @@
                         <label>Cost of Free Week(s)</label>
                         <div class="input-prefix"><span>$</span><input type="number" id="weekCost" placeholder="800" value="800" min="0" step="50"></div>
                         <p class="helper">Dollar value of the weeks being given as reward</p>
+                    </div>
+                    <div class="m3-market-group" id="fw_m3MarketGroup">
+                        <label>Market</label>
+                        <select id="fw_m3Market" onchange="onM3MarketChange('fw')"><option value="">-- Select Market --</option></select>
+                        <p class="helper">Select your market to auto-fill the average BKN value</p>
+                    </div>
+                    <div class="m3-market-group" id="fw_m3BknGroup">
+                        <label>Average BKN Value</label>
+                        <div class="m3-bkn-display" id="fw_m3BknDisplay">Select a market</div>
+                        <p class="helper">Average cost per booking from paid channels (Influencer, Display, Paid Search, Paid Social, Partnership, Video)</p>
+                    </div>
+                    <div class="m3-roi-group" id="fw_m3RoiGroup">
+                        <label>Target ROI (Fixed)</label>
+                        <div class="m3-roi-fixed">25%</div>
+                        <p class="helper">Fixed ROI target for Model 3</p>
                     </div>
                     <div class="form-group">
                         <label>Average BKN Value</label>
@@ -230,6 +257,21 @@
                         <p class="helper">Dollar value of the reward being given</p>
                         
                     </div>
+                    <div class="m3-market-group" id="rw_m3MarketGroup">
+                        <label>Market</label>
+                        <select id="rw_m3Market" onchange="onM3MarketChange('rw')"><option value="">-- Select Market --</option></select>
+                        <p class="helper">Select your market to auto-fill the average BKN value</p>
+                    </div>
+                    <div class="m3-market-group" id="rw_m3BknGroup">
+                        <label>Average BKN Value</label>
+                        <div class="m3-bkn-display" id="rw_m3BknDisplay">Select a market</div>
+                        <p class="helper">Average cost per booking from paid channels (Influencer, Display, Paid Search, Paid Social, Partnership, Video)</p>
+                    </div>
+                    <div class="m3-roi-group" id="rw_m3RoiGroup">
+                        <label>Target ROI (Fixed)</label>
+                        <div class="m3-roi-fixed">25%</div>
+                        <p class="helper">Fixed ROI target for Model 3</p>
+                    </div>
                     <div class="form-group" id="rw_bknGroup" style="display:none;">
                         <label>Average BKN Value</label>
                         <div class="input-prefix"><span>$</span><input type="number" id="rw_bknValue" placeholder="600" value="600" min="0" step="50" oninput="calculateRewards()"></div>
@@ -275,12 +317,91 @@
         // Model configuration
         var currentModel = 1;
         function getBonusPerBkn() { return currentModel === 1 ? 1000 : 4000; }
-        function roundBkns(val) { return currentModel === 1 ? Math.ceil(val) : Math.round(val); }
+        function roundBkns(val) {
+            if (currentModel === 1) return Math.ceil(val);
+            if (currentModel === 2) return Math.round(val);
+            return val; // Model 3: no rounding
+        }
+        function getROI(tab) {
+            if (currentModel === 3) return 25;
+            return parseFloat(document.getElementById('customROI_' + tab).value) || 0;
+        }
+        function getBknValue(tab) {
+            if (currentModel === 3) {
+                var sel = document.getElementById(tab + '_m3Market');
+                var market = sel ? sel.value : '';
+                return market && marketBknValues[market] ? marketBknValues[market] : 0;
+            }
+            if (tab === 'fw') return parseFloat(document.getElementById('bknValue').value) || 0;
+            return parseFloat(document.getElementById('rw_bknValue').value) || 0;
+        }
+
+        var marketBknValues = {
+            "Argentina & Uruguay":503.39,"Austria":675.35,"Belgium (Dutch)":1113.65,
+            "Belgium (French) & Luxembourg":1113.65,"Brazil":420.71,"Canada (ENG)":825.74,
+            "Canada (French)":825.74,"Chile":1090.03,"China":2053.41,"Colombia":949.78,
+            "Costa Rica":748.60,"Czech Republic":394.29,"Denmark":572.18,"Ecuador":748.60,
+            "Finland":530.39,"France":929.33,"Germany":1100.75,"Hong Kong":1563.30,
+            "Hungary":252.82,"Indonesia":1870.92,"Italy":825.04,"Japan":2130.28,
+            "Mexico":1191.74,"Netherlands":936.42,"Norway":678.66,"Panama":949.78,
+            "Peru":607.85,"Poland":365.12,"Portugal":736.65,"Romania":252.82,
+            "Saudi Arabia":1013.22,"Slovakia":441.29,"South Korea":1510.20,"Spain":918.59,
+            "Sweden":877.08,"Switzerland (DE)":906.19,"Switzerland (FR)":1029.10,
+            "Switzerland (IT)":955.69,"Taiwan":1134.42,"Turkey":536.68,"USA":1003.20,
+            "Venezuela":1348.37,"Vietnam":1274.89,"WWA":642.03
+        };
+
+        function populateM3Dropdowns() {
+            var markets = Object.keys(marketBknValues).sort();
+            var sels = [document.getElementById('fw_m3Market'), document.getElementById('rw_m3Market')];
+            for (var s = 0; s < sels.length; s++) {
+                if (!sels[s]) continue;
+                for (var i = 0; i < markets.length; i++) {
+                    var opt = document.createElement('option');
+                    opt.value = markets[i]; opt.textContent = markets[i];
+                    sels[s].appendChild(opt);
+                }
+            }
+        }
+
+        function onM3MarketChange(tab) {
+            var market = document.getElementById(tab + '_m3Market').value;
+            var display = document.getElementById(tab + '_m3BknDisplay');
+            if (market && marketBknValues[market]) {
+                display.textContent = '$' + marketBknValues[market].toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            } else {
+                display.textContent = 'Select a market';
+            }
+            if (tab === 'fw') calculateFreeWeeks(); else calculateRewards();
+        }
 
         function toggleModel() {
-            currentModel = currentModel === 1 ? 2 : 1;
-            document.getElementById('switchLabel').textContent = currentModel === 2 ? 'Model 2' : 'Switch Model';
-            document.getElementById('footerBonus').textContent = currentModel === 2 ? '4,000' : '1,000';
+            currentModel = currentModel === 1 ? 2 : (currentModel === 2 ? 3 : 1);
+            var labels = {1: 'Switch Model', 2: 'Model 2', 3: 'Model 3'};
+            var bonus = {1: '1,000', 2: '4,000', 3: '4,000'};
+            document.getElementById('switchLabel').textContent = labels[currentModel];
+            document.getElementById('footerBonus').textContent = bonus[currentModel];
+
+            // Show/hide Model 3 elements
+            var m3Groups = document.querySelectorAll('.m3-market-group, .m3-roi-group');
+            for (var i = 0; i < m3Groups.length; i++) {
+                m3Groups[i].classList.toggle('visible', currentModel === 3);
+            }
+
+            // Show/hide standard inputs
+            var fwBknInput = document.getElementById('bknValue');
+            var fwRoiSelector = document.getElementById('customROI_fw');
+            var rwRoiSelector = document.getElementById('customROI_rw');
+            if (fwBknInput) fwBknInput.parentElement.parentElement.style.display = currentModel === 3 ? 'none' : '';
+            if (fwRoiSelector) fwRoiSelector.parentElement.parentElement.parentElement.querySelector('.roi-selector').style.display = currentModel === 3 ? 'none' : '';
+            if (fwRoiSelector) fwRoiSelector.parentElement.style.display = currentModel === 3 ? 'none' : '';
+            if (rwRoiSelector) rwRoiSelector.parentElement.parentElement.parentElement.querySelector('.roi-selector').style.display = currentModel === 3 ? 'none' : '';
+            if (rwRoiSelector) rwRoiSelector.parentElement.style.display = currentModel === 3 ? 'none' : '';
+
+            // Hide standard BKN helper text in FW tab for model 3
+            var fwBknHelpers = fwBknInput ? fwBknInput.parentElement.parentElement.querySelectorAll('.helper') : [];
+            for (var i = 0; i < fwBknHelpers.length; i++) fwBknHelpers[i].style.display = currentModel === 3 ? 'none' : '';
+
             calculateFreeWeeks();
             calculateChallenge();
             calculateRewards();
@@ -308,8 +429,8 @@
 
         function calculateFreeWeeks() {
             var cost = parseFloat(document.getElementById('weekCost').value) || 0;
-            var bknValue = parseFloat(document.getElementById('bknValue').value) || 0;
-            var roiPercent = parseFloat(document.getElementById('customROI_fw').value) || 0;
+            var bknValue = getBknValue('fw');
+            var roiPercent = getROI('fw');
             var roiMultiplier = 1 + (roiPercent / 100);
             var requiredRevenue = cost * roiMultiplier;
             var revenueFromBKNs = requiredRevenue * BKNS_PERCENT;
@@ -321,7 +442,7 @@
             var totalPoints = pointsNeeded + bonusPoints;
             document.getElementById('fw_revenue').textContent = '$' + formatNumber(Math.round(requiredRevenue));
             document.getElementById('fw_revenueBreakdown').textContent = 'Cost x (1 + ' + roiPercent + '%) = $' + formatNumber(cost) + ' x ' + roiMultiplier;
-            var bknsDisplay = bknsRounded;
+            var bknsDisplay = (currentModel === 3) ? (bknsRounded % 1 === 0 ? bknsRounded : bknsRounded.toFixed(2)) : bknsRounded;
             document.getElementById('fw_bkns').innerHTML = bknsDisplay + '<span class="unit">BKNs</span>';
             document.getElementById('fw_bknsBreakdown').textContent = '75% of $' + formatNumber(Math.round(requiredRevenue)) + ' / $' + formatNumber(bknValue) + ' per BKN';
             document.getElementById('fw_points').innerHTML = formatNumber(Math.round(pointsNeeded)) + '<span class="unit">pts</span>';
@@ -384,8 +505,8 @@
         function calculateRewards() {
             var rewardType = document.getElementById('rw_type').value;
             var rewardValue = parseFloat(document.getElementById('rw_value').value) || 0;
-            var roiPercent = parseFloat(document.getElementById('customROI_rw').value) || 0;
-            var bknValue = parseFloat(document.getElementById('rw_bknValue').value) || 0;
+            var roiPercent = getROI('rw');
+            var bknValue = getBknValue('rw');
             
             // Determine point value based on reward type
             var pointVal = (rewardType === 'Free Credit Activities') ? 0.055 : 0.05;
@@ -394,7 +515,7 @@
             var needsBkns = rewardValue >= 300;
             
             // Show/hide BKN input and results
-            document.getElementById('rw_bknGroup').style.display = needsBkns ? 'block' : 'none';
+            document.getElementById('rw_bknGroup').style.display = (needsBkns && currentModel !== 3) ? 'block' : 'none';
             document.getElementById('rw_bknsResult').style.display = needsBkns ? 'block' : 'none';
             document.getElementById('rw_totalResult').style.display = needsBkns ? 'block' : 'none';
             
@@ -415,7 +536,7 @@
                 var bonusPoints = bknsRounded * getBonusPerBkn();
                 var totalPoints = pointsNeeded + bonusPoints;
                 
-                var bknsDisplay = bknsRounded;
+                var bknsDisplay = (currentModel === 3) ? (bknsRounded % 1 === 0 ? bknsRounded : bknsRounded.toFixed(2)) : bknsRounded;
                 document.getElementById('rw_bkns').innerHTML = bknsDisplay + '<span class="unit">BKNs</span>';
                 document.getElementById('rw_bknsBreakdown').textContent = '75% of $' + formatNumber(Math.round(requiredRevenue)) + ' / $' + formatNumber(bknValue) + ' per BKN';
                 document.getElementById('rw_points').innerHTML = formatNumber(Math.round(pointsNeeded)) + '<span class="unit">pts</span>';
@@ -440,6 +561,7 @@
         document.getElementById('ch_hours').addEventListener('input', calculateChallenge);
 
         populateDropdowns();
+        populateM3Dropdowns();
         calculateFreeWeeks();
         calculateRewards();
     </script>
