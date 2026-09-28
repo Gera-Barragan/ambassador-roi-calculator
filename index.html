@@ -89,6 +89,13 @@
         .m3-bkn-display { background: #F0F7FF; border: 2px solid #D4EDFC; border-radius: 10px; padding: 12px 16px; font-size: 16px; color: #1B3A5C; font-weight: 600; }
         .m3-roi-group { display: none; margin-bottom: 20px; }
         .m3-roi-group.visible { display: block; }
+        .m3-roi-group label { display: block; font-size: 13px; font-weight: 600; color: #4A5D6F; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px; }
+        .m3-roi-group .helper { font-size: 12px; color: #8A9BAD; margin-top: 4px; font-weight: 400; text-transform: none; letter-spacing: 0; }
+        .m3-roi-group input { width: 100%; padding: 12px 16px; border: 2px solid #E8ECF0; border-radius: 10px; font-size: 16px; color: #1B3A5C; transition: border-color 0.2s, box-shadow 0.2s; background: #FAFBFC; }
+        .m3-roi-group input:focus { outline: none; border-color: #D50072; box-shadow: 0 0 0 3px rgba(213, 0, 114, 0.1); background: #FFFFFF; }
+        .m3-roi-group .input-suffix { position: relative; }
+        .m3-roi-group .input-suffix span { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: #8A9BAD; font-size: 16px; font-weight: 500; }
+        .m3-roi-group .input-suffix input { padding-right: 36px; }
     </style>
 </head>
 <body>
@@ -140,7 +147,7 @@
                     <div class="m3-roi-group" id="fw_m3RoiGroup">
                         <label>Target ROI</label>
                         <div class="input-suffix"><span>%</span><input type="number" id="m3ROI_fw" value="25" min="0" step="5" oninput="calculateFreeWeeks()"></div>
-                        <p class="helper">Default: 25%</p>
+                        
                     </div>
                     <div class="form-group">
                         <label>Average BKN Value</label>
@@ -204,7 +211,11 @@
                         <div class="cost-display" id="ch_costDisplay">$0.00</div>
                         <p class="helper" id="ch_costHelper">Auto-filled based on market and category selection</p>
                     </div>
-                    <div class="form-group">
+                    <div class="m3-roi-group" id="ch_m3RoiGroup">
+                        <label>Target ROI</label>
+                        <div class="input-suffix"><span>%</span><input type="number" id="m3ROI_ch" value="25" min="0" step="5" oninput="calculateChallenge()"></div>
+                    </div>
+                    <div class="form-group" id="ch_standardRoiGroup">
                         <label>Target ROI</label>
                         <div class="roi-selector">
                             <div class="roi-option active" data-roi="100" data-tab="ch" onclick="selectROI(this,'ch')">100%</div>
@@ -269,7 +280,7 @@
                     <div class="m3-roi-group" id="rw_m3RoiGroup">
                         <label>Target ROI</label>
                         <div class="input-suffix"><span>%</span><input type="number" id="m3ROI_rw" value="25" min="0" step="5" oninput="calculateRewards()"></div>
-                        <p class="helper">Default: 25%</p>
+                        
                     </div>
                     <div class="m3-roi-group" id="rw_m3SplitGroup">
                         <label>Payment Split (Fixed)</label>
@@ -409,6 +420,10 @@
             var fwBknHelpers = fwBknInput ? fwBknInput.parentElement.parentElement.querySelectorAll('.helper') : [];
             for (var i = 0; i < fwBknHelpers.length; i++) fwBknHelpers[i].style.display = currentModel === 3 ? 'none' : '';
 
+            // Show/hide standard vs M3 ROI in Challenges
+            var chStdRoi = document.getElementById('ch_standardRoiGroup');
+            if (chStdRoi) chStdRoi.style.display = currentModel === 3 ? 'none' : '';
+
             calculateFreeWeeks();
             calculateChallenge();
             calculateRewards();
@@ -484,7 +499,7 @@
         function calculateChallenge() {
             var market = document.getElementById('ch_market').value;
             var category = document.getElementById('ch_category').value;
-            var roiPercent = parseFloat(document.getElementById('customROI_ch').value) || 0;
+            var roiPercent = getROI('ch');
             var hours = parseFloat(document.getElementById('ch_hours').value) || 1;
             if (!market || !category || !challengeData[category] || challengeData[category][market] === undefined) {
                 document.getElementById('ch_totalCost').textContent = '$0.00';
