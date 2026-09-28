@@ -87,7 +87,6 @@
         .m3-market-group select { width: 100%; padding: 12px 16px; border: 2px solid #E8ECF0; border-radius: 10px; font-size: 16px; color: #1B3A5C; transition: border-color 0.2s, box-shadow 0.2s; background: #FAFBFC; }
         .m3-market-group select:focus { outline: none; border-color: #D50072; box-shadow: 0 0 0 3px rgba(213, 0, 114, 0.1); background: #FFFFFF; }
         .m3-bkn-display { background: #F0F7FF; border: 2px solid #D4EDFC; border-radius: 10px; padding: 12px 16px; font-size: 16px; color: #1B3A5C; font-weight: 600; }
-        .m3-roi-fixed { background: #F0F7FF; border: 2px solid #D4EDFC; border-radius: 10px; padding: 12px 16px; font-size: 16px; color: #1B3A5C; font-weight: 600; }
         .m3-roi-group { display: none; margin-bottom: 20px; }
         .m3-roi-group.visible { display: block; }
     </style>
@@ -139,9 +138,9 @@
                         <p class="helper">Average cost per booking from paid channels (Influencer, Display, Paid Search, Paid Social, Partnership, Video)</p>
                     </div>
                     <div class="m3-roi-group" id="fw_m3RoiGroup">
-                        <label>Target ROI (Fixed)</label>
-                        <div class="m3-roi-fixed">25%</div>
-                        <p class="helper">Fixed ROI target for Model 3</p>
+                        <label>Target ROI</label>
+                        <div class="input-suffix"><span>%</span><input type="number" id="m3ROI_fw" value="25" min="0" step="5" oninput="calculateFreeWeeks()"></div>
+                        <p class="helper">Default: 25%</p>
                     </div>
                     <div class="form-group">
                         <label>Average BKN Value</label>
@@ -268,9 +267,14 @@
                         <p class="helper">Average cost per booking from paid channels (Influencer, Display, Paid Search, Paid Social, Partnership, Video)</p>
                     </div>
                     <div class="m3-roi-group" id="rw_m3RoiGroup">
-                        <label>Target ROI (Fixed)</label>
-                        <div class="m3-roi-fixed">25%</div>
-                        <p class="helper">Fixed ROI target for Model 3</p>
+                        <label>Target ROI</label>
+                        <div class="input-suffix"><span>%</span><input type="number" id="m3ROI_rw" value="25" min="0" step="5" oninput="calculateRewards()"></div>
+                        <p class="helper">Default: 25%</p>
+                    </div>
+                    <div class="m3-roi-group" id="rw_m3SplitGroup">
+                        <label>Payment Split (Fixed)</label>
+                        <div class="split-info"><div class="split-badge points">25% Points</div><div class="split-badge bkns">75% BKNs</div></div>
+                        <p class="helper">For rewards $300+, revenue is split: 75% from BKNs, 25% from Points</p>
                     </div>
                     <div class="form-group" id="rw_bknGroup" style="display:none;">
                         <label>Average BKN Value</label>
@@ -323,7 +327,10 @@
             return val; // Model 3: no rounding
         }
         function getROI(tab) {
-            if (currentModel === 3) return 25;
+            if (currentModel === 3) {
+                var m3Input = document.getElementById('m3ROI_' + tab);
+                return m3Input ? (parseFloat(m3Input.value) || 0) : 25;
+            }
             return parseFloat(document.getElementById('customROI_' + tab).value) || 0;
         }
         function getBknValue(tab) {
